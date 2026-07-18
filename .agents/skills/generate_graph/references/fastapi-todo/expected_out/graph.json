@@ -1,0 +1,126 @@
+{
+  "schema_version": "0.1",
+  "metadata": {
+    "repo_name": "fastapi-todo-example",
+    "repo_root": ".",
+    "output_dir": ".graph",
+    "generated_for": "agent_architecture_context",
+    "languages": [
+      "python"
+    ],
+    "frameworks": [
+      "fastapi"
+    ],
+    "source_roots": [
+      "src/"
+    ],
+    "notes": [
+      "Tiny reference repository; fewer than 8 nodes is acceptable."
+    ]
+  },
+  "nodes": [
+    {
+      "id": "entrypoint.http-api",
+      "label": "HTTP API",
+      "type": "entrypoint",
+      "description": "Creates the FastAPI app and exposes todo routes.",
+      "artifacts": [
+        {
+          "path": "src/main.py",
+          "symbols": [
+            "app"
+          ]
+        },
+        {
+          "path": "src/api.py",
+          "symbols": [
+            "router",
+            "list_todos",
+            "create_todo"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "service.todo",
+      "label": "Todo Service",
+      "type": "service",
+      "description": "Implements todo listing and creation behavior.",
+      "artifacts": [
+        {
+          "path": "src/todos.py",
+          "symbols": [
+            "TodoService"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "store.todo-memory",
+      "label": "Todo Memory Store",
+      "type": "store",
+      "description": "Stores todo items in an in-memory list through a repository abstraction.",
+      "artifacts": [
+        {
+          "path": "src/db.py",
+          "symbols": [
+            "TodoRepository"
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge.http-api-calls-todo-service",
+      "source": "entrypoint.http-api",
+      "target": "service.todo",
+      "type": "calls",
+      "description": "Route handlers delegate todo operations to TodoService.",
+      "evidence": [
+        {
+          "path": "src/api.py",
+          "symbols": [
+            "list_todos",
+            "service.list_todos",
+            "create_todo",
+            "service.create_todo"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edge.todo-service-reads-todo-memory",
+      "source": "service.todo",
+      "target": "store.todo-memory",
+      "type": "reads",
+      "description": "TodoService reads todos through TodoRepository.",
+      "evidence": [
+        {
+          "path": "src/todos.py",
+          "symbols": [
+            "TodoService.list_todos",
+            "repository.list_all"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edge.todo-service-writes-todo-memory",
+      "source": "service.todo",
+      "target": "store.todo-memory",
+      "type": "writes",
+      "description": "TodoService writes new todos through TodoRepository.",
+      "evidence": [
+        {
+          "path": "src/todos.py",
+          "symbols": [
+            "TodoService.create_todo",
+            "repository.save"
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}

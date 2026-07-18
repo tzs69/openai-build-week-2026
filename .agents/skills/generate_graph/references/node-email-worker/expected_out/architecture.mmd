@@ -1,0 +1,9 @@
+graph LR
+  worker_email["Email Worker"]
+  queue_email_jobs["Email Jobs Queue"]
+  service_email["Email Service"]
+  external_smtp_provider["SMTP Provider"]
+
+  worker_email -->|"subscribes"| queue_email_jobs
+  worker_email -->|"calls"| service_email
+  service_email -->|"uses"| external_smtp_provider

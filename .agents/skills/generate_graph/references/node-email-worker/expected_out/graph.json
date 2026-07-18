@@ -1,0 +1,137 @@
+{
+  "schema_version": "0.1",
+  "metadata": {
+    "repo_name": "node-email-worker-example",
+    "repo_root": ".",
+    "output_dir": ".graph",
+    "generated_for": "agent_architecture_context",
+    "languages": [
+      "typescript"
+    ],
+    "frameworks": [
+      "node"
+    ],
+    "source_roots": [
+      "src/"
+    ],
+    "notes": [
+      "Tiny reference repository; fewer than 8 nodes is acceptable."
+    ]
+  },
+  "nodes": [
+    {
+      "id": "worker.email",
+      "label": "Email Worker",
+      "type": "worker",
+      "description": "Starts the email job consumer and invokes email delivery behavior for each job.",
+      "artifacts": [
+        {
+          "path": "src/index.ts",
+          "symbols": [
+            "subscribeToEmailJobs",
+            "emailService.sendWelcomeEmail"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "queue.email-jobs",
+      "label": "Email Jobs Queue",
+      "type": "queue",
+      "description": "Represents the subscription boundary for email jobs.",
+      "artifacts": [
+        {
+          "path": "src/queue.ts",
+          "symbols": [
+            "subscribeToEmailJobs",
+            "EmailJob"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "service.email",
+      "label": "Email Service",
+      "type": "service",
+      "description": "Builds welcome emails and sends them through an SMTP client.",
+      "artifacts": [
+        {
+          "path": "src/email_service.ts",
+          "symbols": [
+            "EmailService",
+            "EmailService.sendWelcomeEmail"
+          ]
+        },
+        {
+          "path": "src/templates.ts",
+          "symbols": [
+            "renderWelcomeTemplate"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "external.smtp-provider",
+      "label": "SMTP Provider",
+      "type": "external",
+      "description": "External email delivery provider represented by the SMTP client boundary.",
+      "artifacts": [
+        {
+          "path": "src/smtp_client.ts",
+          "symbols": [
+            "SmtpClient"
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge.email-worker-subscribes-email-jobs",
+      "source": "worker.email",
+      "target": "queue.email-jobs",
+      "type": "subscribes",
+      "description": "The email worker subscribes to email jobs.",
+      "evidence": [
+        {
+          "path": "src/index.ts",
+          "symbols": [
+            "subscribeToEmailJobs"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edge.email-worker-calls-email-service",
+      "source": "worker.email",
+      "target": "service.email",
+      "type": "calls",
+      "description": "The email worker calls EmailService for each consumed job.",
+      "evidence": [
+        {
+          "path": "src/index.ts",
+          "symbols": [
+            "emailService.sendWelcomeEmail"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edge.email-service-uses-smtp-provider",
+      "source": "service.email",
+      "target": "external.smtp-provider",
+      "type": "uses",
+      "description": "EmailService sends rendered messages through SmtpClient.",
+      "evidence": [
+        {
+          "path": "src/email_service.ts",
+          "symbols": [
+            "EmailService.sendWelcomeEmail",
+            "smtpClient.send"
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}

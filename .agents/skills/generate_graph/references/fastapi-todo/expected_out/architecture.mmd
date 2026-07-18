@@ -1,0 +1,8 @@
+graph LR
+  entrypoint_http_api["HTTP API"]
+  service_todo["Todo Service"]
+  store_todo_memory["Todo Memory Store"]
+
+  entrypoint_http_api -->|"calls"| service_todo
+  service_todo -->|"reads"| store_todo_memory
+  service_todo -->|"writes"| store_todo_memory

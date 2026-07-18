@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "schema_version": "0.1",
+    "repo_name": "fastapi-todo-example",
+    "repo_root": ".",
+    "source_graph": ".graph/graph.json",
+    "generated_from": "graph.json"
+  },
+  "artifacts": {
+    "src/main.py": {
+      "nodes": [
+        {
+          "id": "entrypoint.http-api",
+          "symbols": [
+            "app"
+          ]
+        }
+      ],
+      "edges": []
+    },
+    "src/api.py": {
+      "nodes": [
+        {
+          "id": "entrypoint.http-api",
+          "symbols": [
+            "router",
+            "list_todos",
+            "create_todo"
+          ]
+        }
+      ],
+      "edges": [
+        "edge.http-api-calls-todo-service"
+      ]
+    },
+    "src/todos.py": {
+      "nodes": [
+        {
+          "id": "service.todo",
+          "symbols": [
+            "TodoService",
+            "TodoService.list_todos",
+            "TodoService.create_todo"
+          ]
+        }
+      ],
+      "edges": [
+        "edge.todo-service-reads-todo-memory",
+        "edge.todo-service-writes-todo-memory"
+      ]
+    },
+    "src/db.py": {
+      "nodes": [
+        {
+          "id": "store.todo-memory",
+          "symbols": [
+            "TodoRepository"
+          ]
+        }
+      ],
+      "edges": []
+    }
+  }
+}
