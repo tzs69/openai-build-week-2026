@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "schema_version": "0.1",
+    "repo_name": "example-repo",
+    "repo_root": ".",
+    "source_graph": ".graph/graph.json",
+    "generated_from": "graph.json"
+  },
+  "artifacts": {
+    "src/main.py": {
+      "nodes": [
+        {
+          "id": "entrypoint.http-api",
+          "symbols": [
+            "app"
+          ]
+        }
+      ],
+      "edges": []
+    },
+    "src/routes.py": {
+      "nodes": [
+        {
+          "id": "entrypoint.http-api",
+          "symbols": [
+            "router",
+            "create_item"
+          ]
+        }
+      ],
+      "edges": [
+        "edge.http-api-calls-domain-service"
+      ]
+    },
+    "src/domain_service.py": {
+      "nodes": [
+        {
+          "id": "service.domain",
+          "symbols": [
+            "DomainService",
+            "DomainService.create",
+            "DomainService.charge"
+          ]
+        }
+      ],
+      "edges": [
+        "edge.domain-service-writes-primary-db",
+        "edge.domain-service-uses-payment-provider"
+      ]
+    },
+    "src/repository.py": {
+      "nodes": [
+        {
+          "id": "store.primary-db",
+          "symbols": [
+            "Repository"
+          ]
+        }
+      ],
+      "edges": []
+    }
+  }
+}

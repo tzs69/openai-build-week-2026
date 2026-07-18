@@ -1,0 +1,134 @@
+{
+  "schema_version": "0.1",
+  "metadata": {
+    "repo_name": "example-repo",
+    "repo_root": ".",
+    "output_dir": ".graph",
+    "generated_for": "agent_architecture_context",
+    "languages": [
+      "python"
+    ],
+    "frameworks": [
+      "fastapi"
+    ],
+    "source_roots": [
+      "src/"
+    ],
+    "notes": [
+      "This file is the source of truth for architecture nodes, edges, and artifact evidence."
+    ]
+  },
+  "nodes": [
+    {
+      "id": "entrypoint.http-api",
+      "label": "HTTP API",
+      "type": "entrypoint",
+      "description": "Accepts HTTP requests and routes them to application services.",
+      "artifacts": [
+        {
+          "path": "src/main.py",
+          "symbols": [
+            "app"
+          ]
+        },
+        {
+          "path": "src/routes.py",
+          "symbols": [
+            "router"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "service.domain",
+      "label": "Domain Service",
+      "type": "service",
+      "description": "Contains the core application behavior for the domain.",
+      "artifacts": [
+        {
+          "path": "src/domain_service.py",
+          "symbols": [
+            "DomainService"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "store.primary-db",
+      "label": "Primary Store",
+      "type": "store",
+      "description": "Persists and retrieves application data.",
+      "artifacts": [
+        {
+          "path": "src/repository.py",
+          "symbols": [
+            "Repository"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "external.payment-provider",
+      "label": "Payment Provider",
+      "type": "external",
+      "description": "External payment API used by the application.",
+      "artifacts": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge.http-api-calls-domain-service",
+      "source": "entrypoint.http-api",
+      "target": "service.domain",
+      "type": "calls",
+      "description": "HTTP route handlers call the domain service to execute application actions.",
+      "evidence": [
+        {
+          "path": "src/routes.py",
+          "symbols": [
+            "create_item",
+            "DomainService"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edge.domain-service-writes-primary-db",
+      "source": "service.domain",
+      "target": "store.primary-db",
+      "type": "writes",
+      "description": "The domain service persists state through the repository.",
+      "evidence": [
+        {
+          "path": "src/domain_service.py",
+          "symbols": [
+            "DomainService.create",
+            "repository.save"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "edge.domain-service-uses-payment-provider",
+      "source": "service.domain",
+      "target": "external.payment-provider",
+      "type": "uses",
+      "description": "The domain service calls an external payment provider.",
+      "evidence": [
+        {
+          "path": "src/domain_service.py",
+          "symbols": [
+            "DomainService.charge",
+            "PaymentClient"
+          ]
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    {
+      "type": "example_only",
+      "message": "This is a contract example, not a generated graph for a real repository."
+    }
+  ]
+}

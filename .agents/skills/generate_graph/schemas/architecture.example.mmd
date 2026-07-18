@@ -1,0 +1,9 @@
+graph LR
+  entrypoint_http_api["HTTP API"]
+  service_domain["Domain Service"]
+  store_primary_db["Primary Store"]
+  external_payment_provider["Payment Provider"]
+
+  entrypoint_http_api -->|"calls"| service_domain
+  service_domain -->|"writes"| store_primary_db
+  service_domain -->|"uses"| external_payment_provider

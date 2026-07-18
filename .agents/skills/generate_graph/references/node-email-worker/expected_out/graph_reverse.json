@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "schema_version": "0.1",
+    "repo_name": "node-email-worker-example",
+    "repo_root": ".",
+    "source_graph": ".graph/graph.json",
+    "generated_from": "graph.json"
+  },
+  "artifacts": {
+    "src/index.ts": {
+      "nodes": [
+        {
+          "id": "worker.email",
+          "symbols": [
+            "subscribeToEmailJobs",
+            "emailService.sendWelcomeEmail"
+          ]
+        }
+      ],
+      "edges": [
+        "edge.email-worker-subscribes-email-jobs",
+        "edge.email-worker-calls-email-service"
+      ]
+    },
+    "src/queue.ts": {
+      "nodes": [
+        {
+          "id": "queue.email-jobs",
+          "symbols": [
+            "subscribeToEmailJobs",
+            "EmailJob"
+          ]
+        }
+      ],
+      "edges": []
+    },
+    "src/email_service.ts": {
+      "nodes": [
+        {
+          "id": "service.email",
+          "symbols": [
+            "EmailService",
+            "EmailService.sendWelcomeEmail"
+          ]
+        }
+      ],
+      "edges": [
+        "edge.email-service-uses-smtp-provider"
+      ]
+    },
+    "src/templates.ts": {
+      "nodes": [
+        {
+          "id": "service.email",
+          "symbols": [
+            "renderWelcomeTemplate"
+          ]
+        }
+      ],
+      "edges": []
+    },
+    "src/smtp_client.ts": {
+      "nodes": [
+        {
+          "id": "external.smtp-provider",
+          "symbols": [
+            "SmtpClient"
+          ]
+        }
+      ],
+      "edges": []
+    }
+  }
+}
