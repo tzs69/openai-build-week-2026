@@ -3,6 +3,23 @@
 FastAPI service that owns loading and validating a repository's canonical
 `.graph/graph.json` artifact.
 
+## Run the full application with Docker
+
+From the repository root, create `backend/.env` as described below and run:
+
+```powershell
+docker compose -f compose.yaml.dev up --build
+```
+
+The frontend is available at `http://127.0.0.1:5173` and the backend at
+`http://127.0.0.1:8000`. Source files are mounted for development reloads.
+
+To shut down compose stack, just run
+
+```powershell
+docker compose -f compose.yaml.dev down
+```
+
 ## Prerequisites
 
 - Python 3.11+
