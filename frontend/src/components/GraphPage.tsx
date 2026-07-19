@@ -1,6 +1,6 @@
 import { AlertTriangle, GitFork, LoaderCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { FIXTURE_REPOSITORY_LABEL, loadGraphBundle } from '../data/graphData'
+import { loadGraphBundle } from '../data/graphData'
 import type { GraphBundle, GraphSelection } from '../types/graphTypes'
 import { ArchitectureGraph } from './ArchitectureGraph'
 import { DetailsPanel } from './DetailsPanel'
@@ -11,7 +11,7 @@ function LoadingState() {
       <div className="status-screen__content">
         <LoaderCircle aria-hidden="true" size={22} />
         <h1>Loading architecture</h1>
-        <p>Reading the graph and reverse artifact index.</p>
+        <p>Reading the architecture graph.</p>
       </div>
     </main>
   )
@@ -60,12 +60,8 @@ export function GraphPage() {
     return <LoadingState />
   }
 
-  const { graph, reverse } = bundle
-  const repositoryLabel =
-    graph.metadata.repository ??
-    (graph.metadata.repository_root && graph.metadata.repository_root !== '.'
-      ? graph.metadata.repository_root
-      : FIXTURE_REPOSITORY_LABEL)
+  const { graph } = bundle
+  const repositoryLabel = graph.metadata.repository
 
   return (
     <main className="graph-page">
@@ -99,7 +95,6 @@ export function GraphPage() {
         />
         <DetailsPanel
           selection={selection}
-          reverse={reverse}
           warnings={graph.warnings}
           onClose={() => setSelection(null)}
         />

@@ -47,11 +47,10 @@ The Playwright suite uses a locally installed Chrome browser and covers desktop 
 
 Static graph fixtures live under `public/fixtures/`. The frontend currently loads `public/fixtures/test-repo-2/` as configured in `src/data/graphData.ts`.
 
-Each active fixture requires:
+Each active fixture requires one canonical artifact:
 
 ```text
 graph.json
-graph_reverse.json
 ```
 
-`graph.json` drives the visualization. `graph_reverse.json` supplies reverse artifact lookup information shown in the details panel.
+`graph.json` drives the visualization and contains node scope plus edge evidence. The frontend derives its artifact lookup index from this file at load time.

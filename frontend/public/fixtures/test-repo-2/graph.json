@@ -1,69 +1,766 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "1.0",
   "metadata": {
-    "repo_name": "job-tracker",
+    "repo_name": "test_repo_2",
     "repo_root": ".",
-    "output_dir": ".graph",
-    "generated_for": "agent_architecture_context",
     "languages": [
-      "typescript",
-      "prisma"
+      "typescript"
     ],
     "frameworks": [
       "react",
-      "vite",
       "express",
       "prisma"
     ],
     "source_roots": [
-      "client/src/",
-      "server/src/",
-      "server/prisma/"
-    ],
-    "notes": [
-      "This file is the source of truth for architecture nodes, edges, and artifact evidence.",
-      "The repository is an npm workspace containing a React SPA and an Express REST API backed by Prisma and SQLite."
+      "client/src",
+      "server/src",
+      "server/prisma"
     ]
   },
   "nodes": [
     {
-      "id": "entrypoint.web-spa",
-      "label": "React Web SPA",
+      "id": "web-client",
+      "label": "Web Client",
       "type": "entrypoint",
-      "description": "Bootstraps the browser application and routes users between public authentication pages and the protected dashboard.",
-      "artifacts": [
+      "description": "React single-page application for authentication and job-search tracking.",
+      "scope": {
+        "artifacts": []
+      },
+      "parent_id": null
+    },
+    {
+      "id": "client-routing-shell",
+      "label": "Routing & Application Shell",
+      "type": "component",
+      "description": "Bootstraps React, defines public and protected route trees, and supplies page layouts.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "client/src/main.tsx",
+            "symbols": [
+              "createRoot"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/App.tsx",
+            "symbols": [
+              "App"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/routes/router.tsx",
+            "symbols": [
+              "router"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/routes/ProtectedRoute.tsx",
+            "symbols": [
+              "ProtectedRoute"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/routes/PublicRoute.tsx",
+            "symbols": [
+              "PublicRoute"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/layouts/AuthLayout.tsx",
+            "symbols": [
+              "AuthLayout"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/layouts/DashboardLayout.tsx",
+            "symbols": [
+              "DashboardLayout"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/pages/NotFoundPage.tsx",
+            "symbols": [
+              "NotFoundPage"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "web-client"
+    },
+    {
+      "id": "client-authentication",
+      "label": "Client Authentication",
+      "type": "component",
+      "description": "Owns sign-in and registration flows plus persisted client session state.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "client/src/pages/LoginPage.tsx",
+            "symbols": [
+              "LoginPage"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/pages/RegisterPage.tsx",
+            "symbols": [
+              "RegisterPage"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/store/authStore.ts",
+            "symbols": [
+              "useAuthStore",
+              "AuthState"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/services/auth.service.ts",
+            "symbols": [
+              "register",
+              "login",
+              "me"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/schemas/auth.schema.ts",
+            "symbols": [
+              "loginSchema",
+              "registerSchema",
+              "LoginFormValues",
+              "RegisterFormValues"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/types/auth.types.ts",
+            "symbols": [
+              "AuthUser",
+              "LoginInput",
+              "LoginResponse",
+              "RegisterInput"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "web-client"
+    },
+    {
+      "id": "client-job-dashboard",
+      "label": "Job Dashboard",
+      "type": "component",
+      "description": "Displays job applications and statistics, loads dashboard data, and creates applications optimistically.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "client/src/pages/DashboardPage.tsx",
+            "symbols": [
+              "DashboardPage",
+              "STAT_TILES",
+              "STATUS_BADGE_VARIANT"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/jobs/CreateJobForm.tsx",
+            "symbols": [
+              "CreateJobForm"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/hooks/useJobs.ts",
+            "symbols": [
+              "useJobs",
+              "UseJobsResult",
+              "sortByAppliedDateDesc"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/services/job.service.ts",
+            "symbols": [
+              "getJobs",
+              "createJob",
+              "getDashboardStats"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/schemas/job.schema.ts",
+            "symbols": [
+              "createJobSchema",
+              "jobStatusOptions",
+              "CreateJobFormInput",
+              "CreateJobFormOutput"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/types/job.types.ts",
+            "symbols": [
+              "JobStatus",
+              "JobApplication",
+              "DashboardStats",
+              "CreateJobInput"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "web-client"
+    },
+    {
+      "id": "client-api-transport",
+      "label": "API Transport",
+      "type": "service",
+      "description": "Configures the shared Axios client and injects persisted bearer tokens into API requests.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "client/src/lib/http.ts",
+            "symbols": [
+              "http"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/vite-env.d.ts",
+            "symbols": [
+              "ImportMetaEnv",
+              "ImportMeta"
+            ],
+            "ownership": "shared"
+          }
+        ]
+      },
+      "parent_id": "web-client"
+    },
+    {
+      "id": "client-ui-system",
+      "label": "UI System",
+      "type": "shared",
+      "description": "Shared styling, composition utility, and reusable form, table, card, and control primitives.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "client/src/index.css",
+            "symbols": [],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/lib/utils.ts",
+            "symbols": [
+              "cn"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/badge.tsx",
+            "symbols": [
+              "Badge",
+              "badgeVariants"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/button.tsx",
+            "symbols": [
+              "Button",
+              "buttonVariants"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/card.tsx",
+            "symbols": [
+              "Card",
+              "CardHeader",
+              "CardTitle",
+              "CardContent",
+              "CardFooter"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/field.tsx",
+            "symbols": [
+              "Field",
+              "FieldGroup",
+              "FieldLabel",
+              "FieldError"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/input.tsx",
+            "symbols": [
+              "Input"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/label.tsx",
+            "symbols": [
+              "Label"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/select.tsx",
+            "symbols": [
+              "Select",
+              "SelectTrigger",
+              "SelectContent",
+              "SelectItem"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/separator.tsx",
+            "symbols": [
+              "Separator"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/table.tsx",
+            "symbols": [
+              "Table",
+              "TableHeader",
+              "TableBody",
+              "TableRow",
+              "TableHead",
+              "TableCell"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "client/src/components/ui/textarea.tsx",
+            "symbols": [
+              "Textarea"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "web-client"
+    },
+    {
+      "id": "api-server",
+      "label": "API Server",
+      "type": "service",
+      "description": "Express REST API serving authentication, user-scoped job CRUD, and dashboard statistics.",
+      "scope": {
+        "artifacts": []
+      },
+      "parent_id": null
+    },
+    {
+      "id": "api-http-runtime",
+      "label": "HTTP Runtime & Composition",
+      "type": "entrypoint",
+      "description": "Creates the Express application, mounts feature routers, starts the listener, and maps domain failures to responses.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "server/src/index.ts",
+            "symbols": [
+              "PORT",
+              "app.listen"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/app.ts",
+            "symbols": [
+              "app"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/middleware/error.middleware.ts",
+            "symbols": [
+              "errorHandler",
+              "AppError"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "api-server"
+    },
+    {
+      "id": "server-authentication",
+      "label": "Server Authentication",
+      "type": "component",
+      "description": "Registers and authenticates users, issues JWTs, restores current-user identity, and protects authenticated routes.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "server/src/modules/auth/auth.routes.ts",
+            "symbols": [
+              "router"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/auth/auth.controller.ts",
+            "symbols": [
+              "registerHandler",
+              "loginHandler",
+              "meHandler"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/auth/auth.service.ts",
+            "symbols": [
+              "register",
+              "login",
+              "getMe",
+              "EmailAlreadyExistsError",
+              "InvalidCredentialsError",
+              "UserNotFoundError"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/auth/auth.schema.ts",
+            "symbols": [
+              "registerSchema",
+              "loginSchema"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/auth/auth.types.ts",
+            "symbols": [
+              "RegisterInput",
+              "LoginInput",
+              "AuthResponse",
+              "JwtPayload"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/middleware/auth.middleware.ts",
+            "symbols": [
+              "authenticate"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/lib/jwt.ts",
+            "symbols": [
+              "signToken",
+              "verifyToken"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/types/express.d.ts",
+            "symbols": [
+              "Request.userId"
+            ],
+            "ownership": "shared"
+          }
+        ]
+      },
+      "parent_id": "api-server"
+    },
+    {
+      "id": "server-job-management",
+      "label": "Job Management",
+      "type": "component",
+      "description": "Validates and executes user-scoped job application create, read, update, and delete operations.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "server/src/modules/jobs/jobs.routes.ts",
+            "symbols": [
+              "router"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/jobs/jobs.controller.ts",
+            "symbols": [
+              "getJobsHandler",
+              "getJobByIdHandler",
+              "createJobHandler",
+              "updateJobHandler",
+              "deleteJobHandler"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/jobs/jobs.service.ts",
+            "symbols": [
+              "getJobs",
+              "getJobById",
+              "createJob",
+              "updateJob",
+              "deleteJob",
+              "JobNotFoundError"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/jobs/jobs.schema.ts",
+            "symbols": [
+              "createJobSchema",
+              "updateJobSchema"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/jobs/jobs.types.ts",
+            "symbols": [
+              "CreateJobInput",
+              "UpdateJobInput",
+              "GetJobsParams",
+              "GetJobByIdParams",
+              "UpdateJobParams"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "api-server"
+    },
+    {
+      "id": "server-dashboard-analytics",
+      "label": "Dashboard Analytics",
+      "type": "component",
+      "description": "Aggregates each user's applications into total and per-status dashboard counts.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "server/src/modules/dashboard/dashboard.routes.ts",
+            "symbols": [
+              "router"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/dashboard/dashboard.controller.ts",
+            "symbols": [
+              "getDashboardStatsHandler"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/dashboard/dashboard.service.ts",
+            "symbols": [
+              "getDashboardStats",
+              "getCountsByStatus"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/src/modules/dashboard/dashboard.types.ts",
+            "symbols": [
+              "GetDashboardStatsParams",
+              "DashboardStats"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "api-server"
+    },
+    {
+      "id": "prisma-persistence",
+      "label": "Prisma Persistence",
+      "type": "store",
+      "description": "Defines the SQLite user and job-application data model, migrations, and shared Prisma client lifecycle.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "server/src/lib/prisma.ts",
+            "symbols": [
+              "prisma",
+              "PrismaClient"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/prisma/schema.prisma",
+            "symbols": [
+              "User",
+              "JobApplication",
+              "JobStatus"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/prisma/migrations/20260616213003_create_user/migration.sql",
+            "symbols": [],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/prisma/migrations/20260618153022_add_job_application/migration.sql",
+            "symbols": [],
+            "ownership": "primary"
+          },
+          {
+            "path": "server/prisma/migrations/migration_lock.toml",
+            "symbols": [],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "api-server"
+    }
+  ],
+  "edges": [
+    {
+      "id": "routing-guards-use-client-auth",
+      "source": "client-routing-shell",
+      "target": "client-authentication",
+      "type": "depends_on",
+      "label": "Guards routes from persisted authentication state",
+      "evidence": [
         {
-          "path": "client/src/main.tsx",
+          "path": "client/src/routes/ProtectedRoute.tsx",
           "symbols": [
-            "createRoot"
+            "ProtectedRoute",
+            "useAuthStore"
           ]
         },
         {
-          "path": "client/src/App.tsx",
+          "path": "client/src/routes/PublicRoute.tsx",
           "symbols": [
-            "App"
-          ]
-        },
-        {
-          "path": "client/src/routes/router.tsx",
-          "symbols": [
-            "router"
+            "PublicRoute",
+            "useAuthStore"
           ]
         }
       ]
     },
     {
-      "id": "component.client-auth",
-      "label": "Client Authentication",
-      "type": "component",
-      "description": "Manages the persisted browser session, authentication API requests, and public/protected route guards.",
-      "artifacts": [
+      "id": "client-auth-uses-api-transport",
+      "source": "client-authentication",
+      "target": "client-api-transport",
+      "type": "uses",
+      "label": "Sends authentication requests through shared HTTP client",
+      "evidence": [
         {
-          "path": "client/src/store/authStore.ts",
+          "path": "client/src/services/auth.service.ts",
           "symbols": [
-            "useAuthStore"
+            "http",
+            "register",
+            "login",
+            "me"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "client-jobs-use-api-transport",
+      "source": "client-job-dashboard",
+      "target": "client-api-transport",
+      "type": "uses",
+      "label": "Loads and creates dashboard data through shared HTTP client",
+      "evidence": [
+        {
+          "path": "client/src/services/job.service.ts",
+          "symbols": [
+            "http",
+            "getJobs",
+            "createJob",
+            "getDashboardStats"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "api-transport-reads-auth-token",
+      "source": "client-api-transport",
+      "target": "client-authentication",
+      "type": "reads",
+      "label": "Reads persisted bearer token for request authorization",
+      "evidence": [
+        {
+          "path": "client/src/lib/http.ts",
+          "symbols": [
+            "http.interceptors.request",
+            "useAuthStore.getState"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "client-auth-uses-ui-system",
+      "source": "client-authentication",
+      "target": "client-ui-system",
+      "type": "uses",
+      "label": "Builds login and registration forms from shared controls",
+      "evidence": [
+        {
+          "path": "client/src/pages/LoginPage.tsx",
+          "symbols": [
+            "Button",
+            "Input",
+            "Field"
           ]
         },
+        {
+          "path": "client/src/pages/RegisterPage.tsx",
+          "symbols": [
+            "Button",
+            "Input",
+            "Field"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "client-dashboard-uses-ui-system",
+      "source": "client-job-dashboard",
+      "target": "client-ui-system",
+      "type": "uses",
+      "label": "Builds job forms, statistics, and tables from shared controls",
+      "evidence": [
+        {
+          "path": "client/src/pages/DashboardPage.tsx",
+          "symbols": [
+            "Badge",
+            "Button",
+            "Card",
+            "Table"
+          ]
+        },
+        {
+          "path": "client/src/components/jobs/CreateJobForm.tsx",
+          "symbols": [
+            "Button",
+            "Input",
+            "Textarea",
+            "Select"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "client-auth-calls-server-auth",
+      "source": "client-authentication",
+      "target": "server-authentication",
+      "type": "calls",
+      "label": "Calls register, login, and current-user REST endpoints",
+      "evidence": [
         {
           "path": "client/src/services/auth.service.ts",
           "symbols": [
@@ -71,155 +768,131 @@
             "login",
             "me"
           ]
-        },
+        }
+      ]
+    },
+    {
+      "id": "client-dashboard-calls-server-jobs",
+      "source": "client-job-dashboard",
+      "target": "server-job-management",
+      "type": "calls",
+      "label": "Calls job listing and creation REST endpoints",
+      "evidence": [
         {
-          "path": "client/src/routes/ProtectedRoute.tsx",
+          "path": "client/src/services/job.service.ts",
           "symbols": [
-            "ProtectedRoute"
-          ]
-        },
-        {
-          "path": "client/src/routes/PublicRoute.tsx",
-          "symbols": [
-            "PublicRoute"
+            "getJobs",
+            "createJob"
           ]
         }
       ]
     },
     {
-      "id": "component.job-dashboard",
-      "label": "Job Dashboard Client",
-      "type": "component",
-      "description": "Presents job applications and statistics, coordinates dashboard state, and submits new applications through the API client.",
-      "artifacts": [
-        {
-          "path": "client/src/pages/DashboardPage.tsx",
-          "symbols": [
-            "DashboardPage"
-          ]
-        },
-        {
-          "path": "client/src/components/jobs/CreateJobForm.tsx",
-          "symbols": [
-            "CreateJobForm"
-          ]
-        },
-        {
-          "path": "client/src/hooks/useJobs.ts",
-          "symbols": [
-            "useJobs"
-          ]
-        },
+      "id": "client-dashboard-calls-server-analytics",
+      "source": "client-job-dashboard",
+      "target": "server-dashboard-analytics",
+      "type": "calls",
+      "label": "Calls dashboard statistics REST endpoint",
+      "evidence": [
         {
           "path": "client/src/services/job.service.ts",
           "symbols": [
-            "getJobs",
-            "createJob",
             "getDashboardStats"
           ]
         }
       ]
     },
     {
-      "id": "entrypoint.http-api",
-      "label": "Express HTTP API",
-      "type": "entrypoint",
-      "description": "Starts the Express server, parses JSON, mounts feature routers, and applies global error handling.",
-      "artifacts": [
-        {
-          "path": "server/src/index.ts",
-          "symbols": [
-            "app.listen",
-            "errorHandler"
-          ]
-        },
+      "id": "api-runtime-serves-auth",
+      "source": "api-http-runtime",
+      "target": "server-authentication",
+      "type": "serves",
+      "label": "Mounts authentication routes under /api/auth",
+      "evidence": [
         {
           "path": "server/src/app.ts",
           "symbols": [
-            "app"
-          ]
-        },
-        {
-          "path": "server/src/middleware/error.middleware.ts",
-          "symbols": [
-            "errorHandler"
+            "app.use('/api/auth')"
           ]
         }
       ]
     },
     {
-      "id": "service.auth",
-      "label": "Authentication Service",
-      "type": "service",
-      "description": "Registers users, validates credentials, returns current-user data, and issues signed session tokens.",
-      "artifacts": [
+      "id": "api-runtime-serves-jobs",
+      "source": "api-http-runtime",
+      "target": "server-job-management",
+      "type": "serves",
+      "label": "Mounts job routes under /api/jobs",
+      "evidence": [
         {
-          "path": "server/src/modules/auth/auth.routes.ts",
+          "path": "server/src/app.ts",
           "symbols": [
-            "router"
+            "app.use('/api/jobs')"
           ]
-        },
+        }
+      ]
+    },
+    {
+      "id": "api-runtime-serves-dashboard",
+      "source": "api-http-runtime",
+      "target": "server-dashboard-analytics",
+      "type": "serves",
+      "label": "Mounts dashboard routes under /api/dashboard",
+      "evidence": [
         {
-          "path": "server/src/modules/auth/auth.controller.ts",
+          "path": "server/src/app.ts",
           "symbols": [
-            "registerHandler",
-            "loginHandler",
-            "meHandler"
+            "app.use('/api/dashboard')"
           ]
-        },
+        }
+      ]
+    },
+    {
+      "id": "server-auth-uses-persistence",
+      "source": "server-authentication",
+      "target": "prisma-persistence",
+      "type": "uses",
+      "label": "Finds and creates users through Prisma",
+      "evidence": [
         {
           "path": "server/src/modules/auth/auth.service.ts",
           "symbols": [
             "register",
             "login",
-            "getMe"
+            "getMe",
+            "prisma.user"
           ]
         }
       ]
     },
     {
-      "id": "component.api-auth",
-      "label": "API Authorization",
-      "type": "component",
-      "description": "Signs and verifies JWTs and protects API routes by attaching the authenticated user ID to requests.",
-      "artifacts": [
+      "id": "server-jobs-require-auth",
+      "source": "server-job-management",
+      "target": "server-authentication",
+      "type": "depends_on",
+      "label": "Authenticates every job route and consumes request user identity",
+      "evidence": [
         {
-          "path": "server/src/middleware/auth.middleware.ts",
+          "path": "server/src/modules/jobs/jobs.routes.ts",
           "symbols": [
             "authenticate"
           ]
         },
         {
-          "path": "server/src/lib/jwt.ts",
+          "path": "server/src/modules/jobs/jobs.controller.ts",
           "symbols": [
-            "signToken",
-            "verifyToken"
+            "req.userId"
           ]
         }
       ]
     },
     {
-      "id": "service.jobs",
-      "label": "Job Application Service",
-      "type": "service",
-      "description": "Validates and executes user-scoped create, read, update, and delete operations for job applications.",
-      "artifacts": [
-        {
-          "path": "server/src/modules/jobs/jobs.routes.ts",
-          "symbols": [
-            "router"
-          ]
-        },
-        {
-          "path": "server/src/modules/jobs/jobs.controller.ts",
-          "symbols": [
-            "getJobsHandler",
-            "getJobByIdHandler",
-            "createJobHandler",
-            "updateJobHandler",
-            "deleteJobHandler"
-          ]
-        },
+      "id": "server-jobs-use-persistence",
+      "source": "server-job-management",
+      "target": "prisma-persistence",
+      "type": "uses",
+      "label": "Reads and mutates user-scoped job applications through Prisma",
+      "evidence": [
         {
           "path": "server/src/modules/jobs/jobs.service.ts",
           "symbols": [
@@ -227,232 +900,23 @@
             "getJobById",
             "createJob",
             "updateJob",
-            "deleteJob"
+            "deleteJob",
+            "prisma.jobApplication"
           ]
         }
       ]
     },
     {
-      "id": "service.dashboard",
-      "label": "Dashboard Statistics Service",
-      "type": "service",
-      "description": "Aggregates per-user application counts into dashboard totals grouped by job status.",
-      "artifacts": [
-        {
-          "path": "server/src/modules/dashboard/dashboard.routes.ts",
-          "symbols": [
-            "router"
-          ]
-        },
-        {
-          "path": "server/src/modules/dashboard/dashboard.controller.ts",
-          "symbols": [
-            "getDashboardStatsHandler"
-          ]
-        },
-        {
-          "path": "server/src/modules/dashboard/dashboard.service.ts",
-          "symbols": [
-            "getDashboardStats",
-            "getCountsByStatus"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "store.application-db",
-      "label": "Prisma SQLite Store",
-      "type": "store",
-      "description": "Defines and accesses persisted users and job applications in the configured SQLite database.",
-      "artifacts": [
-        {
-          "path": "server/src/lib/prisma.ts",
-          "symbols": [
-            "prisma"
-          ]
-        },
-        {
-          "path": "server/prisma/schema.prisma",
-          "symbols": [
-            "User",
-            "JobApplication",
-            "JobStatus"
-          ]
-        }
-      ]
-    }
-  ],
-  "edges": [
-    {
-      "id": "edge.web-spa-uses-client-auth",
-      "source": "entrypoint.web-spa",
-      "target": "component.client-auth",
-      "type": "uses",
-      "description": "The route tree uses authentication guards to select public or protected application pages.",
-      "evidence": [
-        {
-          "path": "client/src/routes/router.tsx",
-          "symbols": [
-            "ProtectedRoute",
-            "PublicRoute"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge.web-spa-serves-job-dashboard",
-      "source": "entrypoint.web-spa",
-      "target": "component.job-dashboard",
-      "type": "serves",
-      "description": "The protected route tree renders the job dashboard at /dashboard.",
-      "evidence": [
-        {
-          "path": "client/src/routes/router.tsx",
-          "symbols": [
-            "DashboardPage",
-            "router"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge.client-auth-calls-http-api",
-      "source": "component.client-auth",
-      "target": "entrypoint.http-api",
-      "type": "calls",
-      "description": "The client authentication service calls the REST authentication endpoints through the shared HTTP client.",
-      "evidence": [
-        {
-          "path": "client/src/services/auth.service.ts",
-          "symbols": [
-            "http.post",
-            "http.get"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge.job-dashboard-calls-http-api",
-      "source": "component.job-dashboard",
-      "target": "entrypoint.http-api",
-      "type": "calls",
-      "description": "The job client calls the jobs and dashboard REST endpoints through the shared HTTP client.",
-      "evidence": [
-        {
-          "path": "client/src/services/job.service.ts",
-          "symbols": [
-            "getJobs",
-            "createJob",
-            "getDashboardStats"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge.http-api-calls-auth-service",
-      "source": "entrypoint.http-api",
-      "target": "service.auth",
-      "type": "calls",
-      "description": "The Express application mounts the authentication router under /api/auth.",
-      "evidence": [
-        {
-          "path": "server/src/app.ts",
-          "symbols": [
-            "authRoutes",
-            "app.use"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge.http-api-calls-jobs-service",
-      "source": "entrypoint.http-api",
-      "target": "service.jobs",
-      "type": "calls",
-      "description": "The Express application mounts the job application router under /api/jobs.",
-      "evidence": [
-        {
-          "path": "server/src/app.ts",
-          "symbols": [
-            "jobsRoutes",
-            "app.use"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge.http-api-calls-dashboard-service",
-      "source": "entrypoint.http-api",
-      "target": "service.dashboard",
-      "type": "calls",
-      "description": "The Express application mounts the dashboard router under /api/dashboard.",
-      "evidence": [
-        {
-          "path": "server/src/app.ts",
-          "symbols": [
-            "dashboardRoutes",
-            "app.use"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge-auth-service-uses-api-auth",
-      "source": "service.auth",
-      "target": "component.api-auth",
-      "type": "uses",
-      "description": "Login issues JWTs and the current-user endpoint uses the authorization middleware.",
-      "evidence": [
-        {
-          "path": "server/src/modules/auth/auth.service.ts",
-          "symbols": [
-            "login",
-            "signToken"
-          ]
-        },
-        {
-          "path": "server/src/modules/auth/auth.routes.ts",
-          "symbols": [
-            "authenticate",
-            "meHandler"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge-jobs-service-uses-api-auth",
-      "source": "service.jobs",
-      "target": "component.api-auth",
-      "type": "uses",
-      "description": "Every job application route requires a verified JWT and uses the attached user ID for ownership scoping.",
-      "evidence": [
-        {
-          "path": "server/src/modules/jobs/jobs.routes.ts",
-          "symbols": [
-            "authenticate",
-            "router"
-          ]
-        },
-        {
-          "path": "server/src/modules/jobs/jobs.controller.ts",
-          "symbols": [
-            "req.userId"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge-dashboard-service-uses-api-auth",
-      "source": "service.dashboard",
-      "target": "component.api-auth",
-      "type": "uses",
-      "description": "The dashboard statistics route requires a verified JWT and scopes aggregation to the attached user ID.",
+      "id": "server-dashboard-requires-auth",
+      "source": "server-dashboard-analytics",
+      "target": "server-authentication",
+      "type": "depends_on",
+      "label": "Authenticates dashboard requests and consumes request user identity",
       "evidence": [
         {
           "path": "server/src/modules/dashboard/dashboard.routes.ts",
           "symbols": [
-            "authenticate",
-            "router"
+            "authenticate"
           ]
         },
         {
@@ -464,46 +928,11 @@
       ]
     },
     {
-      "id": "edge-auth-service-writes-application-db",
-      "source": "service.auth",
-      "target": "store.application-db",
-      "type": "writes",
-      "description": "Authentication registration creates users and authentication lookups read users through Prisma.",
-      "evidence": [
-        {
-          "path": "server/src/modules/auth/auth.service.ts",
-          "symbols": [
-            "prisma.user.findUnique",
-            "prisma.user.create"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge-jobs-service-writes-application-db",
-      "source": "service.jobs",
-      "target": "store.application-db",
-      "type": "writes",
-      "description": "The job application service reads and mutates user-scoped job application records through Prisma.",
-      "evidence": [
-        {
-          "path": "server/src/modules/jobs/jobs.service.ts",
-          "symbols": [
-            "prisma.jobApplication.findMany",
-            "prisma.jobApplication.findFirst",
-            "prisma.jobApplication.create",
-            "prisma.jobApplication.update",
-            "prisma.jobApplication.delete"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge-dashboard-service-reads-application-db",
-      "source": "service.dashboard",
-      "target": "store.application-db",
+      "id": "server-dashboard-reads-persistence",
+      "source": "server-dashboard-analytics",
+      "target": "prisma-persistence",
       "type": "reads",
-      "description": "The dashboard service groups job application records by status through Prisma.",
+      "label": "Groups job applications by status through Prisma",
       "evidence": [
         {
           "path": "server/src/modules/dashboard/dashboard.service.ts",
@@ -513,20 +942,6 @@
           ]
         }
       ]
-    }
-  ],
-  "warnings": [
-    {
-      "type": "stale_documentation",
-      "message": "STACK.md describes an in-memory better-sqlite3 database and files that do not exist; the graph follows the Prisma schema and current source imports instead."
-    },
-    {
-      "type": "shared_http_client",
-      "message": "client/src/lib/http.ts is shared by client authentication and job dashboard services, but is represented through edge evidence rather than as a separate architecture node."
-    },
-    {
-      "type": "incomplete_client_integration",
-      "message": "The API exposes job update and delete routes, but the dashboard edit/delete controls have no handlers and client/src/services/job.service.ts has no corresponding methods."
     }
   ]
 }

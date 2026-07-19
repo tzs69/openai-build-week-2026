@@ -1,233 +1,332 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "1.0",
   "metadata": {
-    "repo_name": "pycon-2026-fastapi-celery-tutorial",
+    "repo_name": "test_repo_1",
     "repo_root": ".",
-    "output_dir": ".graph",
-    "generated_for": "agent_architecture_context",
     "languages": [
       "python",
+      "javascript",
       "html",
       "css"
     ],
     "frameworks": [
       "fastapi",
-      "celery",
-      "redis",
-      "docker-compose"
+      "celery"
     ],
     "source_roots": [
-      "api/",
-      "worker/",
-      "static/",
-      "scripts/"
-    ],
-    "notes": [
-      "This file is the source of truth for architecture nodes, edges, and artifact evidence.",
-      "Redis is modeled as one queue boundary because the same configured instance is both Celery broker and result backend."
+      "api/app",
+      "worker/app",
+      "static",
+      "scripts"
     ]
   },
   "nodes": [
     {
-      "id": "entrypoint.web-ui",
-      "label": "Browser Upload UI",
+      "id": "browser-upload-client",
+      "label": "Browser Upload Client",
       "type": "entrypoint",
-      "description": "Provides the browser interface for uploading videos, polling job status, and playing source media.",
-      "artifacts": [
-        {
-          "path": "static/index.html",
-          "symbols": [
-            "startPolling",
-            "upload.onclick"
-          ]
-        },
-        {
-          "path": "static/style.css",
-          "symbols": [
-            ".status-header",
-            "#result",
-            "#status"
-          ]
-        }
-      ]
+      "description": "Static browser interface that uploads videos, previews source media, and polls asynchronous job status.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "static/index.html",
+            "symbols": [
+              "upload click handler",
+              "startPolling",
+              "showStatus",
+              "stopPolling"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "static/style.css",
+            "symbols": [
+              "status-header",
+              "poll-meta",
+              "result",
+              "status"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": null
     },
     {
-      "id": "entrypoint.http-api",
-      "label": "FastAPI Application",
-      "type": "entrypoint",
-      "description": "Bootstraps FastAPI, registers the API router, and mounts media and browser static files.",
-      "artifacts": [
-        {
-          "path": "api/app/main.py",
-          "symbols": [
-            "app",
-            "app.include_router",
-            "app.mount"
-          ]
-        }
-      ]
+      "id": "video-api",
+      "label": "Video API",
+      "type": "service",
+      "description": "FastAPI runtime that accepts video uploads, exposes job status, and serves the static client and media files.",
+      "scope": {
+        "artifacts": []
+      },
+      "parent_id": null
     },
     {
-      "id": "component.video-jobs",
-      "label": "Video Job API",
+      "id": "api-http-composition",
+      "label": "API HTTP Composition",
+      "type": "entrypoint",
+      "description": "Constructs FastAPI, creates media directories, mounts the API router, media paths, and browser assets.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "api/app/main.py",
+            "symbols": [
+              "app",
+              "app.include_router",
+              "app.mount"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "api/app/config.py",
+            "symbols": [
+              "DATA_ROOT",
+              "INPUTS_DIR",
+              "OUTPUTS_DIR",
+              "MEDIA_INPUTS_URL",
+              "MEDIA_OUTPUTS_URL",
+              "MAX_UPLOAD_BYTES",
+              "ALLOWED_EXTENSIONS"
+            ],
+            "ownership": "shared"
+          },
+          {
+            "path": "api/Dockerfile",
+            "symbols": [],
+            "ownership": "primary"
+          },
+          {
+            "path": "api/requirements.txt",
+            "symbols": [],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "video-api"
+    },
+    {
+      "id": "video-job-endpoints",
+      "label": "Video Job Endpoints",
       "type": "component",
-      "description": "Validates and stores uploads, submits encoding jobs, and exposes job status responses.",
-      "artifacts": [
-        {
-          "path": "api/app/routes.py",
-          "symbols": [
-            "router",
-            "upload_video",
-            "get_job",
-            "celery.send_task",
-            "celery.AsyncResult"
-          ]
-        }
-      ]
+      "description": "Validates and streams uploaded video files, enqueues encoding, and reports Celery-backed job state and media URLs.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "api/app/routes.py",
+            "symbols": [
+              "router",
+              "upload_video",
+              "get_job"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "video-api"
     },
     {
-      "id": "store.media-files",
-      "label": "Shared Media Files",
-      "type": "store",
-      "description": "Stores uploaded source videos and generated HLS playlists and segments in shared data directories.",
-      "artifacts": [
-        {
-          "path": "api/app/config.py",
-          "symbols": [
-            "DATA_ROOT",
-            "INPUTS_DIR",
-            "OUTPUTS_DIR"
-          ]
-        },
-        {
-          "path": "worker/app/config.py",
-          "symbols": [
-            "DATA_ROOT",
-            "INPUTS_DIR",
-            "OUTPUTS_DIR"
-          ]
-        },
-        {
-          "path": "docker-compose.yml",
-          "symbols": [
-            "services.api.volumes",
-            "services.worker.volumes"
-          ]
-        }
-      ]
+      "id": "api-celery-gateway",
+      "label": "API Celery Gateway",
+      "type": "service",
+      "description": "Configures the API-side Celery client used to publish encoding tasks and inspect result state.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "api/app/celery_client.py",
+            "symbols": [
+              "celery",
+              "celery.conf"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "api/app/config.py",
+            "symbols": [
+              "REDIS_URL",
+              "ENCODE_TASK"
+            ],
+            "ownership": "shared"
+          }
+        ]
+      },
+      "parent_id": "video-api"
     },
     {
-      "id": "queue.redis-celery",
-      "label": "Redis Celery Transport",
-      "type": "queue",
-      "description": "Acts as the Celery task broker and result backend shared by the API and worker.",
-      "artifacts": [
-        {
-          "path": "api/app/celery_client.py",
-          "symbols": [
-            "celery"
-          ]
-        },
-        {
-          "path": "worker/app/celery_app.py",
-          "symbols": [
-            "celery"
-          ]
-        },
-        {
-          "path": "docker-compose.yml",
-          "symbols": [
-            "services.redis"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "worker.video-encoder",
-      "label": "Video Encoder Worker",
+      "id": "encoding-worker",
+      "label": "Encoding Worker",
       "type": "worker",
-      "description": "Consumes encoding tasks and produces HLS output for each uploaded video.",
-      "artifacts": [
-        {
-          "path": "worker/app/celery_app.py",
-          "symbols": [
-            "celery",
-            "app.tasks"
-          ]
-        },
-        {
-          "path": "worker/app/tasks.py",
-          "symbols": [
-            "encode_video",
-            "subprocess.run"
-          ]
-        }
-      ]
+      "description": "Celery worker runtime that consumes video jobs and produces HLS media with FFmpeg.",
+      "scope": {
+        "artifacts": []
+      },
+      "parent_id": null
     },
     {
-      "id": "external.ffmpeg",
-      "label": "FFmpeg",
+      "id": "worker-celery-runtime",
+      "label": "Worker Celery Runtime",
+      "type": "entrypoint",
+      "description": "Configures the Celery worker, result tracking, serialization, and task registration.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "worker/app/celery_app.py",
+            "symbols": [
+              "celery",
+              "celery.conf",
+              "app.tasks"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "worker/app/config.py",
+            "symbols": [
+              "REDIS_URL",
+              "ENCODE_TASK",
+              "DATA_ROOT",
+              "INPUTS_DIR",
+              "OUTPUTS_DIR",
+              "SOURCE_BASENAME"
+            ],
+            "ownership": "shared"
+          },
+          {
+            "path": "worker/Dockerfile",
+            "symbols": [],
+            "ownership": "primary"
+          },
+          {
+            "path": "worker/requirements.txt",
+            "symbols": [],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "encoding-worker"
+    },
+    {
+      "id": "hls-encoding-task",
+      "label": "HLS Encoding Task",
+      "type": "component",
+      "description": "Validates source media, runs FFmpeg HLS transcoding, verifies the playlist, and returns its path.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "worker/app/tasks.py",
+            "symbols": [
+              "encode_video",
+              "cmd",
+              "subprocess.run"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "encoding-worker"
+    },
+    {
+      "id": "redis-task-state",
+      "label": "Redis Task & State Bus",
       "type": "external",
-      "description": "External media-processing executable invoked by the worker to transcode video into HLS output.",
-      "artifacts": []
+      "description": "Redis broker and result backend carrying Celery encoding jobs and their lifecycle state.",
+      "scope": {
+        "artifacts": []
+      },
+      "parent_id": null
     },
     {
-      "id": "config.runtime",
-      "label": "Runtime and Deployment Configuration",
+      "id": "shared-media-storage",
+      "label": "Shared Media Storage",
+      "type": "store",
+      "description": "Shared data volume holding uploaded source videos and generated HLS playlists and segments.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "api/app/config.py",
+            "symbols": [
+              "DATA_ROOT",
+              "INPUTS_DIR",
+              "OUTPUTS_DIR"
+            ],
+            "ownership": "shared"
+          },
+          {
+            "path": "worker/app/config.py",
+            "symbols": [
+              "DATA_ROOT",
+              "INPUTS_DIR",
+              "OUTPUTS_DIR"
+            ],
+            "ownership": "shared"
+          },
+          {
+            "path": "docker-compose.yml",
+            "symbols": [
+              "services.api.volumes",
+              "services.worker.volumes"
+            ],
+            "ownership": "shared"
+          }
+        ]
+      },
+      "parent_id": null
+    },
+    {
+      "id": "ffmpeg-runtime",
+      "label": "FFmpeg Runtime",
+      "type": "external",
+      "description": "System transcoder invoked by the worker to convert source videos into HLS playlists and segments.",
+      "scope": {
+        "artifacts": []
+      },
+      "parent_id": null
+    },
+    {
+      "id": "development-orchestration",
+      "label": "Development & Deployment Orchestration",
       "type": "config",
-      "description": "Defines environment-driven settings, container images, service wiring, shared volumes, and local launch commands.",
-      "artifacts": [
-        {
-          "path": "docker-compose.yml",
-          "symbols": [
-            "services.api",
-            "services.worker",
-            "services.redis"
-          ]
-        },
-        {
-          "path": "api/app/config.py",
-          "symbols": [
-            "REDIS_URL",
-            "MAX_UPLOAD_BYTES",
-            "ALLOWED_EXTENSIONS",
-            "ENCODE_TASK"
-          ]
-        },
-        {
-          "path": "worker/app/config.py",
-          "symbols": [
-            "REDIS_URL",
-            "ENCODE_TASK"
-          ]
-        },
-        {
-          "path": "api/Dockerfile",
-          "symbols": []
-        },
-        {
-          "path": "worker/Dockerfile",
-          "symbols": []
-        },
-        {
-          "path": "scripts/dev.py",
-          "symbols": [
-            "api",
-            "worker",
-            "redis",
-            "docker"
-          ]
-        }
-      ]
+      "description": "Defines the Docker multi-service stack and local commands for installing and starting Redis, API, and worker processes.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "docker-compose.yml",
+            "symbols": [
+              "services.redis",
+              "services.api",
+              "services.worker"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "scripts/dev.py",
+            "symbols": [
+              "install",
+              "redis",
+              "api",
+              "worker",
+              "docker",
+              "main",
+              "local_env"
+            ],
+            "ownership": "primary"
+          },
+          {
+            "path": "README.md",
+            "symbols": [],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": null
     }
   ],
   "edges": [
     {
-      "id": "edge.web-ui-calls-video-jobs",
-      "source": "entrypoint.web-ui",
-      "target": "component.video-jobs",
+      "id": "browser-calls-video-jobs",
+      "source": "browser-upload-client",
+      "target": "video-job-endpoints",
       "type": "calls",
-      "description": "The browser submits videos and polls job status through the video job endpoints.",
+      "label": "Uploads videos and polls returned job status URLs",
       "evidence": [
         {
           "path": "static/index.html",
@@ -240,60 +339,73 @@
       ]
     },
     {
-      "id": "edge.http-api-serves-web-ui",
-      "source": "entrypoint.http-api",
-      "target": "entrypoint.web-ui",
+      "id": "api-composition-serves-browser",
+      "source": "api-http-composition",
+      "target": "browser-upload-client",
       "type": "serves",
-      "description": "FastAPI serves the browser application from the static directory.",
+      "label": "Serves the static browser application at the root path",
       "evidence": [
         {
           "path": "api/app/main.py",
           "symbols": [
-            "app.mount",
-            "StaticFiles(directory=\"static\", html=True)"
+            "app.mount('/', StaticFiles(directory='static', html=True))"
           ]
         }
       ]
     },
     {
-      "id": "edge.http-api-serves-video-jobs",
-      "source": "entrypoint.http-api",
-      "target": "component.video-jobs",
+      "id": "api-composition-serves-job-endpoints",
+      "source": "api-http-composition",
+      "target": "video-job-endpoints",
       "type": "serves",
-      "description": "FastAPI registers the video job router under the /api prefix.",
+      "label": "Mounts video and job routes under /api",
       "evidence": [
         {
           "path": "api/app/main.py",
           "symbols": [
-            "api_router",
-            "app.include_router"
+            "app.include_router(api_router, prefix='/api')"
           ]
         }
       ]
     },
     {
-      "id": "edge.video-jobs-reads-media-files",
-      "source": "component.video-jobs",
-      "target": "store.media-files",
-      "type": "reads",
-      "description": "Job status handling inspects shared input files to validate and describe a job.",
+      "id": "api-composition-serves-media",
+      "source": "api-http-composition",
+      "target": "shared-media-storage",
+      "type": "serves",
+      "label": "Exposes input and output directories as static media URLs",
+      "evidence": [
+        {
+          "path": "api/app/main.py",
+          "symbols": [
+            "app.mount(MEDIA_INPUTS_URL)",
+            "app.mount(MEDIA_OUTPUTS_URL)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "video-jobs-use-celery-gateway",
+      "source": "video-job-endpoints",
+      "target": "api-celery-gateway",
+      "type": "uses",
+      "label": "Publishes encoding work and queries asynchronous result state",
       "evidence": [
         {
           "path": "api/app/routes.py",
           "symbols": [
-            "get_job",
-            "job_dir.exists",
-            "job_dir.glob"
+            "celery.send_task",
+            "celery.AsyncResult"
           ]
         }
       ]
     },
     {
-      "id": "edge.video-jobs-writes-media-files",
-      "source": "component.video-jobs",
-      "target": "store.media-files",
+      "id": "video-jobs-write-media",
+      "source": "video-job-endpoints",
+      "target": "shared-media-storage",
       "type": "writes",
-      "description": "Upload handling streams source videos into the shared input directory.",
+      "label": "Streams validated uploads into per-job input directories",
       "evidence": [
         {
           "path": "api/app/routes.py",
@@ -306,81 +418,127 @@
       ]
     },
     {
-      "id": "edge.video-jobs-publishes-redis-celery",
-      "source": "component.video-jobs",
-      "target": "queue.redis-celery",
-      "type": "publishes",
-      "description": "Upload handling publishes an encode_video task with the job identifier as the Celery task ID.",
-      "evidence": [
-        {
-          "path": "api/app/routes.py",
-          "symbols": [
-            "upload_video",
-            "celery.send_task",
-            "ENCODE_TASK"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "edge.video-jobs-reads-redis-results",
-      "source": "component.video-jobs",
-      "target": "queue.redis-celery",
+      "id": "video-jobs-read-media",
+      "source": "video-job-endpoints",
+      "target": "shared-media-storage",
       "type": "reads",
-      "description": "Job status handling reads Celery task state from the Redis-backed result backend.",
+      "label": "Checks source files when reporting job status and builds media URLs",
       "evidence": [
         {
           "path": "api/app/routes.py",
           "symbols": [
             "get_job",
-            "celery.AsyncResult",
-            "result.state"
-          ]
-        },
-        {
-          "path": "api/app/celery_client.py",
-          "symbols": [
-            "Celery",
-            "backend=REDIS_URL"
+            "job_dir.exists",
+            "job_dir.glob"
           ]
         }
       ]
     },
     {
-      "id": "edge.video-encoder-subscribes-redis-celery",
-      "source": "worker.video-encoder",
-      "target": "queue.redis-celery",
-      "type": "subscribes",
-      "description": "The Celery worker consumes registered encoding tasks from the Redis broker.",
+      "id": "api-gateway-publishes-redis",
+      "source": "api-celery-gateway",
+      "target": "redis-task-state",
+      "type": "publishes",
+      "label": "Uses Redis as the Celery task broker",
+      "evidence": [
+        {
+          "path": "api/app/celery_client.py",
+          "symbols": [
+            "Celery(broker=REDIS_URL)"
+          ]
+        },
+        {
+          "path": "api/app/routes.py",
+          "symbols": [
+            "celery.send_task"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "api-gateway-reads-redis-state",
+      "source": "api-celery-gateway",
+      "target": "redis-task-state",
+      "type": "reads",
+      "label": "Uses Redis as the Celery result backend for job state",
+      "evidence": [
+        {
+          "path": "api/app/celery_client.py",
+          "symbols": [
+            "Celery(backend=REDIS_URL)"
+          ]
+        },
+        {
+          "path": "api/app/routes.py",
+          "symbols": [
+            "celery.AsyncResult",
+            "result.state"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "worker-runtime-registers-encoding-task",
+      "source": "worker-celery-runtime",
+      "target": "hls-encoding-task",
+      "type": "uses",
+      "label": "Imports and registers the named encoding task",
       "evidence": [
         {
           "path": "worker/app/celery_app.py",
           "symbols": [
-            "celery",
-            "broker=REDIS_URL",
-            "app.tasks"
+            "import app.tasks"
           ]
         },
         {
           "path": "worker/app/tasks.py",
           "symbols": [
-            "@celery.task",
-            "encode_video"
+            "celery.task(name=ENCODE_TASK)"
           ]
         }
       ]
     },
     {
-      "id": "edge.video-encoder-reads-media-files",
-      "source": "worker.video-encoder",
-      "target": "store.media-files",
+      "id": "worker-subscribes-redis",
+      "source": "worker-celery-runtime",
+      "target": "redis-task-state",
+      "type": "subscribes",
+      "label": "Consumes Celery tasks from the Redis broker",
+      "evidence": [
+        {
+          "path": "worker/app/celery_app.py",
+          "symbols": [
+            "Celery(broker=REDIS_URL)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "worker-writes-redis-state",
+      "source": "worker-celery-runtime",
+      "target": "redis-task-state",
+      "type": "writes",
+      "label": "Records task lifecycle and results in the Redis backend",
+      "evidence": [
+        {
+          "path": "worker/app/celery_app.py",
+          "symbols": [
+            "Celery(backend=REDIS_URL)",
+            "task_track_started"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "encoding-task-reads-source-media",
+      "source": "hls-encoding-task",
+      "target": "shared-media-storage",
       "type": "reads",
-      "description": "The encoder reads the uploaded source video from the shared input directory.",
+      "label": "Reads the uploaded source video from its job directory",
       "evidence": [
         {
           "path": "worker/app/tasks.py",
           "symbols": [
-            "encode_video",
             "source",
             "source.is_file"
           ]
@@ -388,52 +546,50 @@
       ]
     },
     {
-      "id": "edge.video-encoder-writes-media-files",
-      "source": "worker.video-encoder",
-      "target": "store.media-files",
+      "id": "encoding-task-writes-hls-media",
+      "source": "hls-encoding-task",
+      "target": "shared-media-storage",
       "type": "writes",
-      "description": "The encoder writes HLS playlists and segments into the shared output directory.",
+      "label": "Creates output directories, HLS playlists, and media segments",
       "evidence": [
         {
           "path": "worker/app/tasks.py",
           "symbols": [
-            "encode_video",
-            "out_dir",
-            "playlist"
+            "out_dir.mkdir",
+            "playlist",
+            "hls_segment_filename"
           ]
         }
       ]
     },
     {
-      "id": "edge.video-encoder-uses-ffmpeg",
-      "source": "worker.video-encoder",
-      "target": "external.ffmpeg",
-      "type": "uses",
-      "description": "The worker invokes FFmpeg as a subprocess to produce HLS media.",
+      "id": "encoding-task-calls-ffmpeg",
+      "source": "hls-encoding-task",
+      "target": "ffmpeg-runtime",
+      "type": "calls",
+      "label": "Invokes FFmpeg to transcode source video into HLS",
       "evidence": [
         {
           "path": "worker/app/tasks.py",
           "symbols": [
             "cmd",
-            "ffmpeg",
             "subprocess.run"
           ]
         },
         {
           "path": "worker/Dockerfile",
           "symbols": [
-            "apt-get install",
-            "ffmpeg"
+            "apt-get install ffmpeg"
           ]
         }
       ]
     },
     {
-      "id": "edge.runtime-configures-http-api",
-      "source": "config.runtime",
-      "target": "entrypoint.http-api",
+      "id": "orchestration-configures-api",
+      "source": "development-orchestration",
+      "target": "video-api",
       "type": "configures",
-      "description": "Runtime configuration defines the API image, environment, volumes, port, and Uvicorn command.",
+      "label": "Builds, configures, mounts, and starts the FastAPI service",
       "evidence": [
         {
           "path": "docker-compose.yml",
@@ -442,21 +598,20 @@
           ]
         },
         {
-          "path": "api/app/config.py",
+          "path": "scripts/dev.py",
           "symbols": [
-            "DATA_ROOT",
-            "MAX_UPLOAD_BYTES",
-            "ALLOWED_EXTENSIONS"
+            "api",
+            "docker"
           ]
         }
       ]
     },
     {
-      "id": "edge.runtime-configures-video-encoder",
-      "source": "config.runtime",
-      "target": "worker.video-encoder",
+      "id": "orchestration-configures-worker",
+      "source": "development-orchestration",
+      "target": "encoding-worker",
       "type": "configures",
-      "description": "Runtime configuration defines the worker image, environment, shared volume, and Celery command.",
+      "label": "Builds, configures, mounts, and starts the Celery worker",
       "evidence": [
         {
           "path": "docker-compose.yml",
@@ -465,31 +620,51 @@
           ]
         },
         {
-          "path": "worker/app/config.py",
+          "path": "scripts/dev.py",
           "symbols": [
-            "DATA_ROOT",
-            "REDIS_URL",
-            "ENCODE_TASK"
+            "worker",
+            "docker"
           ]
         }
       ]
     },
     {
-      "id": "edge.runtime-configures-redis-celery",
-      "source": "config.runtime",
-      "target": "queue.redis-celery",
+      "id": "orchestration-configures-redis",
+      "source": "development-orchestration",
+      "target": "redis-task-state",
       "type": "configures",
-      "description": "Runtime configuration provisions Redis and supplies its URL to the API and worker.",
+      "label": "Starts Redis and gates dependent services on its health check",
       "evidence": [
         {
           "path": "docker-compose.yml",
           "symbols": [
             "services.redis",
-            "REDIS_URL"
+            "condition: service_healthy"
+          ]
+        },
+        {
+          "path": "scripts/dev.py",
+          "symbols": [
+            "redis",
+            "docker"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "orchestration-configures-media-storage",
+      "source": "development-orchestration",
+      "target": "shared-media-storage",
+      "type": "configures",
+      "label": "Mounts the shared data directory into API and worker containers",
+      "evidence": [
+        {
+          "path": "docker-compose.yml",
+          "symbols": [
+            "./data:/data"
           ]
         }
       ]
     }
-  ],
-  "warnings": []
+  ]
 }

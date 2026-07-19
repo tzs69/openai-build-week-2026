@@ -435,13 +435,6 @@
   line-height: 1.35;
 }
 
-.artifact-item__related {
-  margin: 8px 0 0;
-  color: #7b857f;
-  font-size: 9px;
-  line-height: 1.4;
-}
-
 .warnings {
   margin-top: 22px;
   padding-top: 18px;

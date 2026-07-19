@@ -1,31 +1,24 @@
 import { FileCode2, Network, X } from 'lucide-react'
 import type {
   ArtifactReference,
-  GraphReverseMap,
   GraphSelection,
   GraphWarning,
 } from '../types/graphTypes'
 
 interface DetailsPanelProps {
   selection: GraphSelection
-  reverse: GraphReverseMap
   warnings: GraphWarning[]
   onClose: () => void
 }
 
 interface ArtifactListProps {
   artifacts: ArtifactReference[]
-  reverse: GraphReverseMap
 }
 
-function ArtifactList({ artifacts, reverse }: ArtifactListProps) {
+function ArtifactList({ artifacts }: ArtifactListProps) {
   return (
     <ul className="artifact-list">
-      {artifacts.map((artifact) => {
-        const reverseEntry = reverse.artifacts[artifact.path]
-        const relatedEdgeCount = reverseEntry?.edges.length ?? 0
-
-        return (
+      {artifacts.map((artifact) => (
           <li className="artifact-item" key={`${artifact.path}:${artifact.symbols.join('|')}`}>
             <div className="artifact-item__path">
               <FileCode2 aria-hidden="true" size={13} />
@@ -40,16 +33,8 @@ function ArtifactList({ artifacts, reverse }: ArtifactListProps) {
                 ))}
               </div>
             )}
-            {reverseEntry && (
-              <p className="artifact-item__related">
-                Reverse index: {reverseEntry.nodes.length} node
-                {reverseEntry.nodes.length === 1 ? '' : 's'}, {relatedEdgeCount} edge
-                {relatedEdgeCount === 1 ? '' : 's'}
-              </p>
-            )}
           </li>
-        )
-      })}
+      ))}
     </ul>
   )
 }
@@ -90,7 +75,6 @@ function Warnings({ warnings }: { warnings: GraphWarning[] }) {
 
 export function DetailsPanel({
   selection,
-  reverse,
   warnings,
   onClose,
 }: DetailsPanelProps) {
@@ -158,7 +142,7 @@ export function DetailsPanel({
             <h3 className="detail-section__title">{isNode ? 'Artifacts' : 'Evidence'}</h3>
             <span className="detail-section__count">{artifacts.length}</span>
           </div>
-          <ArtifactList artifacts={artifacts} reverse={reverse} />
+          <ArtifactList artifacts={artifacts} />
         </section>
 
         <Warnings warnings={warnings} />

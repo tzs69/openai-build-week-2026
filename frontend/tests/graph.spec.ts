@@ -4,12 +4,13 @@ test('renders every architecture node and edge', async ({ page }) => {
   await page.goto('/')
 
   await expect(page.getByRole('heading', { name: 'test_repo_2' })).toBeVisible()
-  await expect(page.locator('.architecture-node')).toHaveCount(11)
-  await expect(page.locator('.react-flow__edge')).toHaveCount(19)
-  await expect(page.locator('[data-edge-label]')).toHaveCount(19)
+  await expect(page.locator('.architecture-node')).toHaveCount(10)
+  await expect(page.locator('.react-flow__edge')).toHaveCount(17)
+  await expect(page.locator('[data-edge-label]')).toHaveCount(17)
   await expect(page.locator('.architecture-node__footer')).toHaveCount(0)
-  await page.getByLabel('React Client Entrypoint, entrypoint').click()
-  await expect(page.getByText('Generation warnings')).toBeVisible()
+  await expect(page.getByLabel('Web Client, entrypoint')).toHaveCount(0)
+  await expect(page.getByLabel('API Server, service')).toHaveCount(0)
+  await expect(page.getByText('Generation warnings')).toHaveCount(0)
 })
 
 test('keeps relationship labels clear of nodes and one another', async ({ page }, testInfo) => {
@@ -48,29 +49,38 @@ test('keeps relationship labels clear of nodes and one another', async ({ page }
 test('opens node and edge evidence in the details panel', async ({ page }) => {
   await page.goto('/')
 
-  await page.getByLabel('React Client Entrypoint, entrypoint').click()
+  await page.getByLabel('Routing & Application Shell, component').click()
   const details = page.getByLabel('Node details')
-  await expect(details.getByRole('heading', { name: 'React Client Entrypoint' })).toBeVisible()
+  await expect(details.getByRole('heading', { name: 'Routing & Application Shell' })).toBeVisible()
   await expect(details.getByText('client/src/main.tsx', { exact: true })).toBeVisible()
+  await expect(details.getByText(/Reverse index:/)).toHaveCount(0)
 
-  const edge = page.locator('.react-flow__edge[data-id="edge.client-auth-calls-auth-api"]')
+  const edge = page.locator('.react-flow__edge[data-id="client-auth-calls-server-auth"]')
   await edge.dispatchEvent('click')
   const edgeDetails = page.getByLabel('Edge details')
   await expect(edgeDetails.getByRole('heading', { name: 'calls' })).toBeVisible()
-  await expect(edgeDetails.getByText('component.client-auth', { exact: true })).toBeVisible()
-  await expect(edgeDetails.getByText('component.server-auth', { exact: true })).toBeVisible()
+  await expect(edgeDetails.getByText('client-authentication', { exact: true })).toBeVisible()
+  await expect(edgeDetails.getByText('server-authentication', { exact: true })).toBeVisible()
 })
 
-test('supports an empty warning list', async ({ page }) => {
+test('supports optional structured warnings', async ({ page }) => {
   await page.route('**/fixtures/test-repo-2/graph.json', async (route) => {
     const response = await route.fetch()
     const graph = await response.json()
-    await route.fulfill({ response, json: { ...graph, warnings: [] } })
+    await route.fulfill({
+      response,
+      json: {
+        ...graph,
+        warnings: [{ type: 'test_warning', message: 'Fixture warning' }],
+      },
+    })
   })
 
   await page.goto('/')
-  await expect(page.locator('.architecture-node')).toHaveCount(11)
-  await expect(page.getByText('Generation warnings')).toHaveCount(0)
+  await expect(page.locator('.architecture-node')).toHaveCount(10)
+  await page.getByLabel('Routing & Application Shell, component').click()
+  await expect(page.getByText('Generation warnings')).toBeVisible()
+  await expect(page.getByText('Fixture warning')).toBeVisible()
 })
 
 test('shows a clear fixture-load error', async ({ page }) => {
