@@ -1,0 +1,88 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "repo_name": "reference-agent-app",
+    "repo_root": ".",
+    "languages": ["python"],
+    "frameworks": [],
+    "source_roots": ["backend/"]
+  },
+  "nodes": [
+    {
+      "id": "backend",
+      "parent_id": null,
+      "label": "Backend",
+      "type": "component",
+      "description": "Contains the agent planning and conflict-analysis runtime.",
+      "scope": {"artifacts": [{"path": "backend/", "symbols": [], "ownership": "primary"}]}
+    },
+    {
+      "id": "agent-orchestration",
+      "parent_id": "backend",
+      "label": "Agent Orchestration",
+      "type": "component",
+      "description": "Decomposes requests, plans changes, and checks plans for conflicts.",
+      "scope": {"artifacts": [{"path": "backend/orchestration/", "symbols": [], "ownership": "primary"}]}
+    },
+    {
+      "id": "task-decomposition",
+      "parent_id": "agent-orchestration",
+      "label": "Task Decomposition",
+      "type": "service",
+      "description": "Turns an implementation request into work that can be planned.",
+      "scope": {"artifacts": [{"path": "backend/orchestration/decompose.py", "symbols": ["decompose_request"], "ownership": "primary"}]}
+    },
+    {
+      "id": "planner-execution",
+      "parent_id": "agent-orchestration",
+      "label": "Planner Execution",
+      "type": "service",
+      "description": "Creates proposed change contracts and invokes conflict analysis.",
+      "scope": {
+        "artifacts": [
+          {"path": "backend/orchestration/planner.py", "symbols": ["plan_change"], "ownership": "primary"},
+          {"path": "backend/contracts/models.py", "symbols": ["ChangeContract"], "ownership": "shared"}
+        ]
+      }
+    },
+    {
+      "id": "conflict-detection",
+      "parent_id": "agent-orchestration",
+      "label": "Conflict Detection",
+      "type": "component",
+      "description": "Owns the behavior for finding collisions between proposed changes.",
+      "scope": {"artifacts": [{"path": "backend/conflicts/", "symbols": [], "ownership": "primary"}]}
+    },
+    {
+      "id": "conflict-detector",
+      "parent_id": "conflict-detection",
+      "label": "Conflict Detector",
+      "type": "service",
+      "description": "Architecturally significant class that evaluates change contracts.",
+      "scope": {
+        "artifacts": [
+          {"path": "backend/conflicts/detector.py", "symbols": ["ConflictDetector", "ConflictDetector.detect_conflicts"], "ownership": "primary"},
+          {"path": "backend/contracts/models.py", "symbols": ["ChangeContract"], "ownership": "shared"}
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "decomposition-calls-planner",
+      "source": "task-decomposition",
+      "target": "planner-execution",
+      "type": "calls",
+      "label": "Delegates decomposed work for planning",
+      "evidence": [{"path": "backend/orchestration/decompose.py", "symbols": ["decompose_request", "plan_change"]}]
+    },
+    {
+      "id": "planner-calls-conflict-detector",
+      "source": "planner-execution",
+      "target": "conflict-detector",
+      "type": "calls",
+      "label": "Checks planned contracts for conflicts",
+      "evidence": [{"path": "backend/orchestration/planner.py", "symbols": ["plan_change", "ConflictDetector.detect_conflicts"]}]
+    }
+  ]
+}

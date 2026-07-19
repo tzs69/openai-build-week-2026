@@ -1,0 +1,12 @@
+[project]
+name = "hierarchical-codebase-graph"
+version = "0.1.0"
+description = "Deterministic CLI for hierarchical codebase graph artifacts"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+hgraph = "hierarchical_graph.cli:entrypoint"
+
+[tool.setuptools.package-data]
+hierarchical_graph = ["schema.json"]
