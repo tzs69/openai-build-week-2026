@@ -1,0 +1,25 @@
+﻿graph LR
+  entrypoint_web_spa["React Web SPA"]
+  component_client_auth["Client Authentication"]
+  component_job_dashboard["Job Dashboard Client"]
+  entrypoint_http_api["Express HTTP API"]
+  service_auth["Authentication Service"]
+  component_api_auth["API Authorization"]
+  service_jobs["Job Application Service"]
+  service_dashboard["Dashboard Statistics Service"]
+  store_application_db["Prisma SQLite Store"]
+
+  entrypoint_web_spa -->|"uses"| component_client_auth
+  entrypoint_web_spa -->|"serves"| component_job_dashboard
+  component_client_auth -->|"calls"| entrypoint_http_api
+  component_job_dashboard -->|"calls"| entrypoint_http_api
+  entrypoint_http_api -->|"calls"| service_auth
+  entrypoint_http_api -->|"calls"| service_jobs
+  entrypoint_http_api -->|"calls"| service_dashboard
+  service_auth -->|"uses"| component_api_auth
+  service_jobs -->|"uses"| component_api_auth
+  service_dashboard -->|"uses"| component_api_auth
+  service_auth -->|"writes"| store_application_db
+  service_jobs -->|"writes"| store_application_db
+  service_dashboard -->|"reads"| store_application_db
+
