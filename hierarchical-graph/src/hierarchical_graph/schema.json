@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/hierarchical-codebase-graph/schema.json",
+  "title": "Hierarchical Codebase Graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "metadata", "nodes", "edges"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "stringSet": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_name", "repo_root", "languages", "frameworks", "source_roots"],
+      "properties": {
+        "repo_name": { "type": "string", "minLength": 1 },
+        "repo_root": { "const": "." },
+        "languages": { "$ref": "#/$defs/stringSet" },
+        "frameworks": { "$ref": "#/$defs/stringSet" },
+        "source_roots": { "$ref": "#/$defs/stringSet" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "symbols", "ownership"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "symbols": { "$ref": "#/$defs/stringSet" },
+        "ownership": { "enum": ["primary", "shared"] }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "symbols"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "symbols": {
+          "allOf": [
+            { "$ref": "#/$defs/stringSet" },
+            { "minItems": 1 }
+          ]
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifacts"],
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifact" }
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "parent_id", "label", "type", "description", "scope"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "parent_id": {
+          "oneOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "type": {
+          "enum": ["entrypoint", "component", "service", "store", "queue", "worker", "scheduler", "external", "shared", "config"]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "scope": { "$ref": "#/$defs/scope" }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source", "target", "type", "label", "evidence"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "source": { "$ref": "#/$defs/identifier" },
+        "target": { "$ref": "#/$defs/identifier" },
+        "type": {
+          "enum": ["calls", "depends_on", "reads", "writes", "publishes", "subscribes", "serves", "uses", "configures"]
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidence" }
+        }
+      }
+    }
+  }
+}
