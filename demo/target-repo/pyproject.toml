@@ -1,0 +1,9 @@
+[project]
+name = "merge-marshal-demo-api"
+version = "0.1.0"
+description = "Curated target repository for the Merge Marshal coordination demo"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

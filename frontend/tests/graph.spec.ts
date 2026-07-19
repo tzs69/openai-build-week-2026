@@ -1,15 +1,119 @@
 import { expect, test } from '@playwright/test'
 
-test('renders every architecture node and edge', async ({ page }) => {
+test('loads the canonical backend projection and inspects executor scope', async ({ page }) => {
+  const fixtureRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().includes('/fixtures/')) {
+      fixtureRequests.push(request.url())
+    }
+  })
+
   await page.goto('/')
 
-  await expect(page.getByRole('heading', { name: 'test_repo_2' })).toBeVisible()
-  await expect(page.locator('.architecture-node')).toHaveCount(11)
-  await expect(page.locator('.react-flow__edge')).toHaveCount(19)
-  await expect(page.locator('[data-edge-label]')).toHaveCount(19)
-  await expect(page.locator('.architecture-node__footer')).toHaveCount(0)
-  await page.getByLabel('React Client Entrypoint, entrypoint').click()
-  await expect(page.getByText('Generation warnings')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'merge-marshal-demo-api' })).toBeVisible()
+  await expect(page.locator('.architecture-node')).toHaveCount(5)
+  await expect(page.locator('.react-flow__edge')).toHaveCount(3)
+  await expect(page.getByText('Depth 1')).toBeVisible()
+
+  await page.getByLabel('User Domain, component').click()
+  const details = page.getByLabel('Node details')
+  await expect(details.getByRole('heading', { name: 'User Domain' })).toBeVisible()
+  await expect(details.getByText('src/demo_app/schemas/user.py', { exact: true })).toBeVisible()
+  await expect(details.getByText('primary', { exact: true }).first()).toBeVisible()
+  expect(fixtureRequests).toEqual([])
+})
+
+test('drills into a component and returns through the hierarchy breadcrumb', async ({ page }) => {
+  await page.goto('/')
+
+  await page.getByLabel('User Domain, component').click()
+  await page.getByRole('button', { name: 'Explore this component' }).click()
+
+  const hierarchy = page.getByRole('navigation', { name: 'Graph hierarchy' })
+  await expect(hierarchy.getByRole('button', { name: 'User Domain' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await expect(page.locator('.architecture-node')).toHaveCount(5)
+  await expect(page.getByLabel('User Endpoint, service')).toBeVisible()
+  await expect(page.getByLabel('User Service, service')).toBeVisible()
+  await expect(page.getByLabel('User Response Schema, component')).toBeVisible()
+
+  await page.getByLabel('User Response Schema, component').click()
+  const details = page.getByLabel('Node details')
+  await expect(details.getByText('UserResponse.user_id', { exact: true })).toBeVisible()
+  await expect(details.getByText('shared', { exact: true })).toBeVisible()
+
+  await hierarchy.getByRole('button', { name: 'Architecture' }).click()
+  await expect(page.getByLabel('Payment Domain, component')).toBeVisible()
+  await expect(page.locator('.architecture-node')).toHaveCount(5)
+})
+
+test('shows the derived plan, blocking reason, and conditional schedule', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chrome')
+  await page.goto('/')
+
+  const plan = page.getByLabel('Coordination plan')
+  await expect(plan.getByRole('button', { name: /Rename the canonical user identity/ })).toContainText('READY')
+  await expect(plan.getByRole('button', { name: /Add user caching/ })).toContainText(
+    'BLOCKED · replan required',
+  )
+  await expect(plan.getByRole('button', { name: /structured payment logging/i })).toContainText('READY')
+  await expect(plan.getByText('A + C', { exact: true })).toBeVisible()
+  await expect(plan.getByText('A compatible replanned contract is required')).toBeVisible()
+
+  await plan.getByRole('button', { name: /Add user caching/ }).click()
+  await expect(plan.getByText('Blocking conflict')).toBeVisible()
+  await expect(plan).toContainText('retires a resource that task-b still consumes')
+})
+
+test('renders proposed architecture without treating it as verified graph data', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chrome')
+  await page.goto('/')
+
+  await page.getByLabel('Coordination plan').getByRole('button', { name: /Add user caching/ }).click()
+  const proposedCache = page.getByLabel('User Cache, store')
+  await expect(proposedCache).toBeVisible()
+  await expect(proposedCache).toHaveClass(/is-proposed/)
+  await expect(page.locator('.react-flow__edge.is-proposed-edge')).toHaveCount(1)
+
+  await proposedCache.click()
+  const details = page.getByLabel('Node details')
+  await expect(details.getByText('Proposed change')).toBeVisible()
+  await expect(details).toContainText('No verified artifact exists yet')
+})
+
+test('remaps one canonical task impact when the hierarchy projection changes', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop-chrome')
+  await page.goto('/')
+
+  const userDomain = page.getByLabel('User Domain, component')
+  await expect(userDomain).toHaveClass(/impact-direct/)
+  await userDomain.click()
+  await page.getByRole('button', { name: 'Explore this component' }).click()
+
+  const schema = page.getByLabel('User Response Schema, component')
+  await expect(schema).toHaveClass(/impact-direct/)
+  await schema.click()
+  await expect(page.getByLabel('Node details')).toContainText('Task A impact')
+  await expect(page.getByLabel('Node details')).toContainText(
+    'The renamed symbol belongs to the response schema',
+  )
+})
+
+test('opens aggregated edge evidence in the details panel', async ({ page }) => {
+  await page.goto('/')
+
+  const edge = page.locator(
+    '.react-flow__edge[data-id="projected-api-entrypoint-serves-user-domain"]',
+  )
+  await edge.dispatchEvent('click')
+
+  const details = page.getByLabel('Edge details')
+  await expect(details.getByRole('heading', { name: 'serves' })).toBeVisible()
+  await expect(details.getByText('Dispatches user requests')).toBeVisible()
+  await expect(details.getByText('src/demo_app/app.py', { exact: true })).toBeVisible()
+  await expect(details.getByText('Canonical edges').locator('..')).toContainText('1')
 })
 
 test('keeps relationship labels clear of nodes and one another', async ({ page }, testInfo) => {
@@ -45,40 +149,30 @@ test('keeps relationship labels clear of nodes and one another', async ({ page }
   expect(collisions).toEqual({ labels: [], nodes: [] })
 })
 
-test('opens node and edge evidence in the details panel', async ({ page }) => {
-  await page.goto('/')
-
-  await page.getByLabel('React Client Entrypoint, entrypoint').click()
-  const details = page.getByLabel('Node details')
-  await expect(details.getByRole('heading', { name: 'React Client Entrypoint' })).toBeVisible()
-  await expect(details.getByText('client/src/main.tsx', { exact: true })).toBeVisible()
-
-  const edge = page.locator('.react-flow__edge[data-id="edge.client-auth-calls-auth-api"]')
-  await edge.dispatchEvent('click')
-  const edgeDetails = page.getByLabel('Edge details')
-  await expect(edgeDetails.getByRole('heading', { name: 'calls' })).toBeVisible()
-  await expect(edgeDetails.getByText('component.client-auth', { exact: true })).toBeVisible()
-  await expect(edgeDetails.getByText('component.server-auth', { exact: true })).toBeVisible()
-})
-
-test('supports an empty warning list', async ({ page }) => {
-  await page.route('**/fixtures/test-repo-2/graph.json', async (route) => {
-    const response = await route.fetch()
-    const graph = await response.json()
-    await route.fulfill({ response, json: { ...graph, warnings: [] } })
-  })
-
-  await page.goto('/')
-  await expect(page.locator('.architecture-node')).toHaveCount(11)
-  await expect(page.getByText('Generation warnings')).toHaveCount(0)
-})
-
-test('shows a clear fixture-load error', async ({ page }) => {
-  await page.route('**/fixtures/test-repo-2/graph.json', (route) =>
-    route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
+test('shows a clear backend error', async ({ page }) => {
+  await page.route('**/api/graph?**', (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ detail: 'graph is invalid' }),
+    }),
   )
 
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Architecture unavailable' })).toBeVisible()
-  await expect(page.getByRole('alert')).toContainText('Unable to load')
+  await expect(page.getByRole('alert')).toContainText('graph is invalid')
+})
+
+test('rejects a malformed backend graph response', async ({ page }) => {
+  await page.route('**/api/graph?**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ schema_version: '0.1', nodes: [], edges: [] }),
+    }),
+  )
+
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Architecture unavailable' })).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('canonical projection contract')
 })

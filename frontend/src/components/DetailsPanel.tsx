@@ -1,98 +1,56 @@
-import { FileCode2, Network, X } from 'lucide-react'
+import { FileCode2, FolderTree, Network, X } from 'lucide-react'
 import type {
+  ArchitectureNode,
   ArtifactReference,
-  GraphReverseMap,
   GraphSelection,
-  GraphWarning,
 } from '../types/graphTypes'
+import type { DiagramImpact, Task } from '../types/coordinationTypes'
 
 interface DetailsPanelProps {
   selection: GraphSelection
-  reverse: GraphReverseMap
-  warnings: GraphWarning[]
   onClose: () => void
+  onExploreNode: (node: ArchitectureNode) => void
+  impacts: DiagramImpact[]
+  tasks: Task[]
+  selectedTaskId: string
 }
 
-interface ArtifactListProps {
-  artifacts: ArtifactReference[]
-  reverse: GraphReverseMap
-}
-
-function ArtifactList({ artifacts, reverse }: ArtifactListProps) {
+function ArtifactList({ artifacts }: { artifacts: ArtifactReference[] }) {
   return (
     <ul className="artifact-list">
-      {artifacts.map((artifact) => {
-        const reverseEntry = reverse.artifacts[artifact.path]
-        const relatedEdgeCount = reverseEntry?.edges.length ?? 0
-
-        return (
-          <li className="artifact-item" key={`${artifact.path}:${artifact.symbols.join('|')}`}>
-            <div className="artifact-item__path">
-              <FileCode2 aria-hidden="true" size={13} />
-              <code>{artifact.path}</code>
+      {artifacts.map((artifact) => (
+        <li className="artifact-item" key={`${artifact.path}:${artifact.symbols.join('|')}`}>
+          <div className="artifact-item__path">
+            <FileCode2 aria-hidden="true" size={13} />
+            <code>{artifact.path}</code>
+            {artifact.ownership && (
+              <span className={`ownership ownership--${artifact.ownership}`}>
+                {artifact.ownership}
+              </span>
+            )}
+          </div>
+          {artifact.symbols.length > 0 && (
+            <div className="symbol-list" aria-label="Symbols">
+              {artifact.symbols.map((symbol) => (
+                <code className="symbol" key={symbol}>
+                  {symbol}
+                </code>
+              ))}
             </div>
-            {artifact.symbols.length > 0 && (
-              <div className="symbol-list" aria-label="Symbols">
-                {artifact.symbols.map((symbol) => (
-                  <code className="symbol" key={symbol}>
-                    {symbol}
-                  </code>
-                ))}
-              </div>
-            )}
-            {reverseEntry && (
-              <p className="artifact-item__related">
-                Reverse index: {reverseEntry.nodes.length} node
-                {reverseEntry.nodes.length === 1 ? '' : 's'}, {relatedEdgeCount} edge
-                {relatedEdgeCount === 1 ? '' : 's'}
-              </p>
-            )}
-          </li>
-        )
-      })}
+          )}
+        </li>
+      ))}
     </ul>
-  )
-}
-
-function Warnings({ warnings }: { warnings: GraphWarning[] }) {
-  if (warnings.length === 0) {
-    return null
-  }
-
-  return (
-    <section className="warnings">
-      <div className="detail-section__heading">
-        <h3 className="detail-section__title">Generation warnings</h3>
-        <span className="detail-section__count">{warnings.length}</span>
-      </div>
-      <ul className="warning-list">
-        {warnings.map((warning) => {
-          const message = typeof warning === 'string' ? warning : warning.message
-          const evidence = typeof warning === 'string' ? [] : (warning.evidence ?? [])
-
-          return (
-            <li key={message}>
-              <span>{message}</span>
-              {evidence.length > 0 && (
-                <div className="warning-list__evidence">
-                  {evidence.map((item) => (
-                    <code key={item.path}>{item.path}</code>
-                  ))}
-                </div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-    </section>
   )
 }
 
 export function DetailsPanel({
   selection,
-  reverse,
-  warnings,
   onClose,
+  onExploreNode,
+  impacts,
+  tasks,
+  selectedTaskId,
 }: DetailsPanelProps) {
   if (!selection) {
     return (
@@ -102,10 +60,7 @@ export function DetailsPanel({
             <Network aria-hidden="true" size={20} />
           </div>
           <h2>Inspect the architecture</h2>
-          <p>Select a component or relationship to view its code evidence.</p>
-        </div>
-        <div className="details-panel__body">
-          <Warnings warnings={warnings} />
+          <p>Select a component or relationship to view its verified code evidence.</p>
         </div>
       </aside>
     )
@@ -113,13 +68,38 @@ export function DetailsPanel({
 
   const isNode = selection.kind === 'node'
   const item = selection.item
-  const artifacts = isNode ? selection.item.artifacts : selection.item.evidence
+  const artifacts = isNode ? selection.item.scope.artifacts : selection.item.evidence
+  const description = isNode ? selection.item.description : selection.item.label
+  const selectedTask = tasks.find((task) => task.id === selectedTaskId)
+  const relevantImpacts = impacts.filter((impact) => {
+    if (impact.task_id !== selectedTaskId) {
+      return false
+    }
+    if (isNode) {
+      return (
+        impact.visible_node_id === selection.item.id ||
+        impact.proposed_node?.id === selection.item.id
+      )
+    }
+    const canonicalEdgeIds = new Set([
+      selection.item.id,
+      ...(selection.item.aggregated_edge_ids ?? []),
+    ])
+    return (
+      impact.proposed_edge?.id === selection.item.id ||
+      impact.evidence.some(
+        (evidence) => evidence.edge_id && canonicalEdgeIds.has(evidence.edge_id),
+      )
+    )
+  })
 
   return (
     <aside className="details-panel" aria-label={`${isNode ? 'Node' : 'Edge'} details`}>
       <header className="details-panel__header">
         <div>
-          <p className="details-panel__kind">{isNode ? 'Component' : 'Relationship'}</p>
+          <p className="details-panel__kind">
+            {item.proposed ? 'Proposed change' : isNode ? 'Component' : 'Relationship'}
+          </p>
           <h2>{isNode ? selection.item.label : selection.item.type}</h2>
         </div>
         <button className="icon-button" type="button" onClick={onClose} title="Close details">
@@ -128,7 +108,7 @@ export function DetailsPanel({
         </button>
       </header>
       <div className="details-panel__body">
-        <p className="details-panel__description">{item.description}</p>
+        <p className="details-panel__description">{description}</p>
 
         <div className="detail-grid">
           <div className="detail-grid__item">
@@ -139,7 +119,12 @@ export function DetailsPanel({
             <span>Type</span>
             <strong>{item.type}</strong>
           </div>
-          {!isNode && (
+          {isNode ? (
+            <div className="detail-grid__item">
+              <span>Parent</span>
+              <code>{selection.item.parent_id ?? 'top level'}</code>
+            </div>
+          ) : (
             <>
               <div className="detail-grid__item">
                 <span>Source</span>
@@ -149,19 +134,62 @@ export function DetailsPanel({
                 <span>Target</span>
                 <code>{selection.item.target}</code>
               </div>
+              <div className="detail-grid__item">
+                <span>Canonical edges</span>
+                <strong>{selection.item.aggregated_edge_ids?.length ?? 1}</strong>
+              </div>
             </>
           )}
         </div>
 
+        {isNode && selection.item.type === 'component' && (
+          <button
+            className="explore-button"
+            type="button"
+            onClick={() => onExploreNode(selection.item)}
+          >
+            <FolderTree aria-hidden="true" size={14} />
+            Explore this component
+          </button>
+        )}
+
         <section className="detail-section">
           <div className="detail-section__heading">
-            <h3 className="detail-section__title">{isNode ? 'Artifacts' : 'Evidence'}</h3>
+            <h3 className="detail-section__title">{isNode ? 'Executor scope' : 'Evidence'}</h3>
             <span className="detail-section__count">{artifacts.length}</span>
           </div>
-          <ArtifactList artifacts={artifacts} reverse={reverse} />
+          <ArtifactList artifacts={artifacts} />
+          {item.proposed && artifacts.length === 0 && (
+            <p className="proposed-empty">No verified artifact exists yet. This is a plan overlay.</p>
+          )}
         </section>
 
-        <Warnings warnings={warnings} />
+        {relevantImpacts.length > 0 && selectedTask && (
+          <section className="detail-section impact-evidence">
+            <div className="detail-section__heading">
+              <h3 className="detail-section__title">Task {selectedTask.id.replace('task-', '').toUpperCase()} impact</h3>
+              <span className="detail-section__count">{relevantImpacts.length}</span>
+            </div>
+            <ul>
+              {relevantImpacts.map((impact) => (
+                <li key={`${impact.effect_id}:${impact.canonical_node_id}`}>
+                  <div>
+                    <span className={`impact-classification impact-classification--${impact.classification}`}>
+                      {impact.classification}
+                    </span>
+                    <span className="impact-operation">{impact.interaction}</span>
+                  </div>
+                  <p>{impact.reason}</p>
+                  {impact.evidence.map((evidence) => (
+                    <small key={`${evidence.kind}:${evidence.edge_id ?? evidence.description}`}>
+                      {evidence.description}
+                    </small>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </aside>
   )

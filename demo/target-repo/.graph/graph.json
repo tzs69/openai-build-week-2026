@@ -1,0 +1,276 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "repo_name": "merge-marshal-demo-api",
+    "repo_root": ".",
+    "languages": [
+      "python"
+    ],
+    "frameworks": [],
+    "source_roots": [
+      "src/"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "demo-application",
+      "label": "Demo Application",
+      "type": "component",
+      "description": "Contains the curated user and payment API used to demonstrate coordinated changes.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/",
+            "symbols": [],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": null
+    },
+    {
+      "id": "api-entrypoint",
+      "label": "API Entrypoint",
+      "type": "entrypoint",
+      "description": "Registers and dispatches requests to the user and payment endpoints.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/app.py",
+            "symbols": [
+              "ROUTES",
+              "dispatch"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "demo-application"
+    },
+    {
+      "id": "user-domain",
+      "label": "User Domain",
+      "type": "component",
+      "description": "Owns retrieval and public representation of users.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/api/users.py",
+            "symbols": [],
+            "ownership": "primary"
+          },
+          {
+            "path": "src/demo_app/services/users.py",
+            "symbols": [],
+            "ownership": "primary"
+          },
+          {
+            "path": "src/demo_app/schemas/user.py",
+            "symbols": [],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "demo-application"
+    },
+    {
+      "id": "payment-domain",
+      "label": "Payment Domain",
+      "type": "component",
+      "description": "Owns independent payment request handling and processing.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/api/payments.py",
+            "symbols": [],
+            "ownership": "primary"
+          },
+          {
+            "path": "src/demo_app/services/payments.py",
+            "symbols": [],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "demo-application"
+    },
+    {
+      "id": "user-endpoint",
+      "label": "User Endpoint",
+      "type": "service",
+      "description": "Handles user requests and delegates retrieval to the user service.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/api/users.py",
+            "symbols": [
+              "get_user"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "user-domain"
+    },
+    {
+      "id": "user-service",
+      "label": "User Service",
+      "type": "service",
+      "description": "Loads stored user data and constructs the public response.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/services/users.py",
+            "symbols": [
+              "USERS",
+              "find_user"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "user-domain"
+    },
+    {
+      "id": "user-response-schema",
+      "label": "User Response Schema",
+      "type": "component",
+      "description": "Defines the canonical user identity returned to API consumers.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/schemas/user.py",
+            "symbols": [
+              "UserResponse",
+              "UserResponse.user_id"
+            ],
+            "ownership": "shared"
+          }
+        ]
+      },
+      "parent_id": "user-domain"
+    },
+    {
+      "id": "payment-endpoint",
+      "label": "Payment Endpoint",
+      "type": "service",
+      "description": "Accepts payment requests and delegates processing.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/api/payments.py",
+            "symbols": [
+              "create_payment"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "payment-domain"
+    },
+    {
+      "id": "payment-service",
+      "label": "Payment Service",
+      "type": "service",
+      "description": "Validates and processes payments into receipts.",
+      "scope": {
+        "artifacts": [
+          {
+            "path": "src/demo_app/services/payments.py",
+            "symbols": [
+              "PaymentReceipt",
+              "process_payment"
+            ],
+            "ownership": "primary"
+          }
+        ]
+      },
+      "parent_id": "payment-domain"
+    }
+  ],
+  "edges": [
+    {
+      "id": "entrypoint-serves-user-endpoint",
+      "source": "api-entrypoint",
+      "target": "user-endpoint",
+      "type": "serves",
+      "label": "Dispatches user requests",
+      "evidence": [
+        {
+          "path": "src/demo_app/app.py",
+          "symbols": [
+            "ROUTES",
+            "dispatch",
+            "get_user"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entrypoint-serves-payment-endpoint",
+      "source": "api-entrypoint",
+      "target": "payment-endpoint",
+      "type": "serves",
+      "label": "Dispatches payment requests",
+      "evidence": [
+        {
+          "path": "src/demo_app/app.py",
+          "symbols": [
+            "ROUTES",
+            "dispatch",
+            "create_payment"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "user-endpoint-calls-user-service",
+      "source": "user-endpoint",
+      "target": "user-service",
+      "type": "calls",
+      "label": "Retrieves the requested user",
+      "evidence": [
+        {
+          "path": "src/demo_app/api/users.py",
+          "symbols": [
+            "get_user",
+            "find_user"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "user-service-uses-response-schema",
+      "source": "user-service",
+      "target": "user-response-schema",
+      "type": "uses",
+      "label": "Constructs the canonical user response",
+      "evidence": [
+        {
+          "path": "src/demo_app/services/users.py",
+          "symbols": [
+            "find_user",
+            "UserResponse",
+            "UserResponse.user_id"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "payment-endpoint-calls-payment-service",
+      "source": "payment-endpoint",
+      "target": "payment-service",
+      "type": "calls",
+      "label": "Processes the submitted payment",
+      "evidence": [
+        {
+          "path": "src/demo_app/api/payments.py",
+          "symbols": [
+            "create_payment",
+            "process_payment"
+          ]
+        }
+      ]
+    }
+  ]
+}

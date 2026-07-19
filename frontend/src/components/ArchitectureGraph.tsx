@@ -15,6 +15,7 @@ import {
   type ArchitectureNodeData,
 } from '../data/graphAdapter'
 import type { ArchitectureGraph, GraphSelection } from '../types/graphTypes'
+import type { RunSnapshot } from '../types/coordinationTypes'
 import { ArchitectureEdge } from './ArchitectureEdge'
 import { GraphNodeCard } from './GraphNodeCard'
 
@@ -22,6 +23,9 @@ interface ArchitectureGraphProps {
   graph: ArchitectureGraph
   selection: GraphSelection
   onSelectionChange: (selection: GraphSelection) => void
+  onExploreNode: (node: ArchitectureGraph['nodes'][number]) => void
+  run: RunSnapshot
+  selectedTaskId: string
 }
 
 const nodeTypes = { architecture: GraphNodeCard }
@@ -43,8 +47,77 @@ export function ArchitectureGraph({
   graph,
   selection,
   onSelectionChange,
+  onExploreNode,
+  run,
+  selectedTaskId,
 }: ArchitectureGraphProps) {
-  const elements = useMemo(() => graphToFlowElements(graph), [graph])
+  const graphWithProposals = useMemo(() => {
+    const nodes = [...graph.nodes]
+    const nodeIds = new Set(nodes.map((node) => node.id))
+    for (const impact of run.impacts) {
+      const proposal = impact.proposed_node
+      if (!proposal || !impact.visible_node_id || nodeIds.has(proposal.id)) {
+        continue
+      }
+      nodes.push({
+        ...proposal,
+        scope: { artifacts: [] },
+        proposed: true,
+        proposed_by_task_id: impact.task_id,
+      })
+      nodeIds.add(proposal.id)
+    }
+
+    const edges = [...graph.edges]
+    const edgeIds = new Set(edges.map((edge) => edge.id))
+    for (const impact of run.impacts) {
+      const proposal = impact.proposed_edge
+      if (
+        !proposal ||
+        edgeIds.has(proposal.id) ||
+        !nodeIds.has(proposal.source) ||
+        !nodeIds.has(proposal.target) ||
+        proposal.source === proposal.target
+      ) {
+        continue
+      }
+      edges.push({
+        ...proposal,
+        evidence: [],
+        proposed: true,
+        proposed_by_task_id: impact.task_id,
+      })
+      edgeIds.add(proposal.id)
+    }
+    return { ...graph, nodes, edges }
+  }, [graph, run.impacts])
+
+  const elements = useMemo(() => {
+    const result = graphToFlowElements(graphWithProposals)
+    const tasksById = new Map(run.tasks.map((task) => [task.id, task]))
+    const impactsByNode = new Map<string, typeof result.nodes[number]['data']['impacts']>()
+    for (const impact of run.impacts) {
+      const nodeId = impact.proposed_node?.id ?? impact.visible_node_id
+      const task = tasksById.get(impact.task_id)
+      if (!nodeId || !task) {
+        continue
+      }
+      const impacts = impactsByNode.get(nodeId) ?? []
+      impacts.push({ impact, task })
+      impactsByNode.set(nodeId, impacts)
+    }
+    return {
+      ...result,
+      nodes: result.nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          impacts: impactsByNode.get(node.id) ?? [],
+          activeTaskId: selectedTaskId,
+        },
+      })),
+    }
+  }, [graphWithProposals, run.impacts, run.tasks, selectedTaskId])
 
   const nodes = useMemo(
     () =>
@@ -75,6 +148,10 @@ export function ArchitectureGraph({
     }
   }
 
+  const handleNodeDoubleClick: NodeMouseHandler<ArchitectureFlowNode> = (_, flowNode) => {
+    onExploreNode(flowNode.data.architectureNode)
+  }
+
   return (
     <div className="graph-canvas" aria-label="Architecture graph">
       <ReactFlow<ArchitectureFlowNode, ArchitectureFlowEdge>
@@ -84,6 +161,7 @@ export function ArchitectureGraph({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodeClick={handleNodeClick}
+        onNodeDoubleClick={handleNodeDoubleClick}
         onEdgeClick={handleEdgeClick}
         onPaneClick={() => onSelectionChange(null)}
         nodesDraggable={false}

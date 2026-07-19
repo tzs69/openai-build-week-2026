@@ -1,16 +1,23 @@
 # Merge Marshal Frontend
 
-React frontend for viewing generated codebase architecture graphs.
+React frontend for exploring backend-projected hierarchical codebase graphs.
 
 ## Prerequisites
 
 - Node.js `20.19+` or `22.12+`
 - npm
-- Google Chrome, only when running the browser tests
+- The backend environment described in [`../backend/README.md`](../backend/README.md)
+- Google Chrome when running the browser tests
 
 ## Start locally
 
-From the repository root:
+Start the FastAPI backend from the repository root:
+
+```bash
+backend/.venv/bin/uvicorn merge_marshal_api.app:app --reload --port 8000
+```
+
+Then start the frontend in another terminal:
 
 ```bash
 cd frontend
@@ -18,40 +25,17 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173` in a browser.
+Open `http://127.0.0.1:5173`. Vite proxies `/api` requests to `http://127.0.0.1:8000`.
 
-Use `npm ci` after pulling the repository. It installs the exact dependency versions recorded in `package-lock.json`. Do not run `npm init`; the project and its dependencies are already defined by `package.json` and `package-lock.json`.
-
-## Production build
-
-```bash
-cd frontend
-npm ci
-npm run build
-npm run preview
-```
-
-`npm run build` generates `frontend/dist/`. Both `dist/` and `node_modules/` are intentionally ignored because they can be reproduced from the tracked source files and lockfile.
+The frontend does not read graph files directly. It requests root/depth projections from `GET /api/graph`, renders them with React Flow, and keeps layout, selection, and breadcrumbs in browser memory.
 
 ## Verification
 
 ```bash
+cd frontend
 npm run lint
 npm run build
 npm run test:e2e
 ```
 
-The Playwright suite uses a locally installed Chrome browser and covers desktop and mobile graph rendering, selection, warning states, fixture failures, and edge-label collisions.
-
-## Graph fixtures
-
-Static graph fixtures live under `public/fixtures/`. The frontend currently loads `public/fixtures/test-repo-2/` as configured in `src/data/graphData.ts`.
-
-Each active fixture requires:
-
-```text
-graph.json
-graph_reverse.json
-```
-
-`graph.json` drives the visualization. `graph_reverse.json` supplies reverse artifact lookup information shown in the details panel.
+The Playwright configuration starts both FastAPI and Vite. The suite covers desktop and mobile graph loading, executor-scope and edge-evidence inspection, hierarchy drill-down, backend failures, malformed responses, and layout collisions.

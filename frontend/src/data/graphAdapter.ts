@@ -1,5 +1,6 @@
 import { MarkerType, type Edge, type Node, type XYPosition } from '@xyflow/react'
 import type { ArchitectureEdge, ArchitectureGraph, ArchitectureNode } from '../types/graphTypes'
+import type { DiagramImpact, Task } from '../types/coordinationTypes'
 import { layoutGraph, NODE_HEIGHT, NODE_WIDTH, type NodePosition } from './layout'
 
 export type HandleSide = 'left' | 'right' | 'top' | 'bottom'
@@ -12,6 +13,8 @@ interface NodeHandles {
 export type ArchitectureNodeData = {
   architectureNode: ArchitectureNode
   handles: NodeHandles
+  impacts: Array<{ impact: DiagramImpact; task: Task }>
+  activeTaskId: string | null
 } & Record<string, unknown>
 
 export type ArchitectureEdgeData = {
@@ -98,6 +101,8 @@ export function graphToFlowElements(graph: ArchitectureGraph): FlowElements {
       height: NODE_HEIGHT,
       data: {
         architectureNode: node,
+        impacts: [],
+        activeTaskId: null,
         handles: {
           source: [...(handles?.source ?? [])],
           target: [...(handles?.target ?? [])],
@@ -129,8 +134,12 @@ export function graphToFlowElements(graph: ArchitectureGraph): FlowElements {
         type: MarkerType.ArrowClosed,
         width: 16,
         height: 16,
-        color: '#79847d',
+        color: edge.proposed ? '#6854c7' : '#79847d',
       },
+      className: edge.proposed ? 'is-proposed-edge' : undefined,
+      style: edge.proposed
+        ? { stroke: '#6854c7', strokeDasharray: '7 5', strokeWidth: 2 }
+        : undefined,
       interactionWidth: 18,
     }
   })
