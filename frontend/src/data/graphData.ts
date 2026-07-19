@@ -7,13 +7,36 @@ import type {
   GraphBundle,
 } from '../types/graphTypes'
 
-const FIXTURE_GRAPH_URL = '/fixtures/test-repo-2/graph.json'
+const GRAPH_API_URL = '/api/graph'
+
+interface ApiErrorPayload {
+  detail?: {
+    message?: string
+    errors?: string[]
+  }
+}
+
+async function responseError(response: Response, url: string): Promise<Error> {
+  const fallback = `Unable to load ${url} (${response.status})`
+
+  try {
+    const payload = (await response.json()) as ApiErrorPayload
+    const message = payload.detail?.message
+    const firstError = payload.detail?.errors?.[0]
+    if (message && firstError) {
+      return new Error(`${message}: ${firstError}`)
+    }
+    return new Error(message ?? fallback)
+  } catch {
+    return new Error(fallback)
+  }
+}
 
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url)
 
   if (!response.ok) {
-    throw new Error(`Unable to load ${url} (${response.status})`)
+    throw await responseError(response, url)
   }
 
   return response.json() as Promise<T>
@@ -149,7 +172,7 @@ function buildArtifactIndex(artifact: GraphArtifact): ArtifactIndex {
 }
 
 export async function loadGraphBundle(): Promise<GraphBundle> {
-  const artifact = await fetchJson<GraphArtifact>(FIXTURE_GRAPH_URL)
+  const artifact = await fetchJson<GraphArtifact>(GRAPH_API_URL)
   validateGraphArtifact(artifact)
 
   return {
