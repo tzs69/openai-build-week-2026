@@ -1,0 +1,43 @@
+name: merge-marshal-dev
+
+services:
+  backend:
+    build:
+      context: ./backend
+    init: true
+    working_dir: /workspace/backend
+
+    volumes:
+      - .:/workspace
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  frontend:
+    build:
+      context: ./frontend
+    init: true
+    working_dir: /workspace/frontend
+    environment:
+      VITE_API_TARGET: http://backend:8000
+
+    volumes:
+      - ./frontend:/workspace/frontend
+      - frontend_node_modules:/workspace/frontend/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  frontend_node_modules:

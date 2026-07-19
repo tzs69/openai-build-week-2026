@@ -1,4 +1,18 @@
 import { expect, test } from '@playwright/test'
+import { readFileSync } from 'node:fs'
+
+const graphFixture = JSON.parse(
+  readFileSync(
+    new URL('../public/fixtures/test-repo-2/graph.json', import.meta.url),
+    'utf-8',
+  ),
+)
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/graph', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', json: graphFixture }),
+  )
+})
 
 test('renders every architecture node and edge', async ({ page }) => {
   await page.goto('/')
@@ -64,13 +78,13 @@ test('opens node and edge evidence in the details panel', async ({ page }) => {
 })
 
 test('supports optional structured warnings', async ({ page }) => {
-  await page.route('**/fixtures/test-repo-2/graph.json', async (route) => {
-    const response = await route.fetch()
-    const graph = await response.json()
+  await page.unroute('**/api/graph')
+  await page.route('**/api/graph', async (route) => {
     await route.fulfill({
-      response,
+      status: 200,
+      contentType: 'application/json',
       json: {
-        ...graph,
+        ...graphFixture,
         warnings: [{ type: 'test_warning', message: 'Fixture warning' }],
       },
     })
@@ -84,7 +98,8 @@ test('supports optional structured warnings', async ({ page }) => {
 })
 
 test('shows a clear fixture-load error', async ({ page }) => {
-  await page.route('**/fixtures/test-repo-2/graph.json', (route) =>
+  await page.unroute('**/api/graph')
+  await page.route('**/api/graph', (route) =>
     route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
   )
 
